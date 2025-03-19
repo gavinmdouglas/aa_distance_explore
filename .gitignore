@@ -1,0 +1,9 @@
+__pycache__
+.DS_Store
+test.py
+tmp.py
+test.R
+tmp.R
+.Rhistory
+*html
+display_items/Old/

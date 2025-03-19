@@ -1,0 +1,320 @@
+---
+title: "Explore AA preferences vs. MAF results"
+author: "Gavin Douglas"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document:
+    code_folding: hide
+    theme: cerulean
+    toc: true
+    toc_float: true
+---
+
+
+```{r setup}
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(kableExtra))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(reshape2))
+suppressPackageStartupMessages(library(ComplexHeatmap))
+library(parallel)
+```
+
+```{r read_in}
+intab <- read.table('/Users/gavin/Drive/ncsu/aa_selection/aa_selection_zenodo/ecoli_variants/ecoli_seg_subs_w_prefs.tsv.gz',
+                    header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+
+intab <- intab[which(intab$N >= 60000), ]
+
+prefs <- colnames(intab)[8:ncol(intab)]
+
+pref_map <- read.table('/Users/gavin/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/metrics_raw_to_clean.tsv.gz',
+                       sep = '\t', header = TRUE, stringsAsFactors = FALSE, row.names = 1)
+
+pref_sd <- sapply(prefs, function(x) { sd(intab[, x]) })
+```
+
+# Spearman correlations {.tabset}
+
+Allele frequency vs preference value.
+
+## All mutations
+
+Based on *all* allele frequencies, including singletons.
+
+```{r spearman_w_singletons}
+pref_vs_af_p <- numeric()
+pref_vs_af_rho <- numeric()
+for (pref in prefs) {
+  cor_out <- cor.test(intab[, pref], intab$AF, method = 'spearman')
+  pref_vs_af_p <- c(pref_vs_af_p, cor_out$p.value)
+  pref_vs_af_rho <- c(pref_vs_af_rho, cor_out$estimate)
+}
+pref_vs_af_spearman <- data.frame(pref = prefs, rho = pref_vs_af_rho, p = pref_vs_af_p)
+
+pref_vs_af_spearman$pref <- pref_map[pref_vs_af_spearman$pref, 'Clean']
+
+# Make a ggplot2 bar graph of the rho values, with the prefs on the y axis.
+ggplot(data = pref_vs_af_spearman, aes(x = rho, y = pref)) +
+  geom_bar(stat = 'identity') +
+  theme_bw() +
+  xlab('Spearman correlation coefficient') +
+  ylab('Preference') +
+  scale_y_discrete(limits = pref_vs_af_spearman$pref[order(pref_vs_af_spearman$rho)])
+```
+
+## Excluding singletons
+
+
+```{r spearman_excluding_singletons}
+pref_vs_af_p <- numeric()
+pref_vs_af_rho <- numeric()
+intab_nosingletons <- intab[which(intab$AC > 1), ]
+for (pref in prefs) {
+  cor_out <- cor.test(intab_nosingletons[, pref], intab_nosingletons$AF, method = 'spearman')
+  pref_vs_af_p <- c(pref_vs_af_p, cor_out$p.value)
+  pref_vs_af_rho <- c(pref_vs_af_rho, cor_out$estimate)
+}
+pref_vs_af_spearman <- data.frame(pref = prefs, rho = pref_vs_af_rho, p = pref_vs_af_p)
+pref_vs_af_spearman$pref <- pref_map[pref_vs_af_spearman$pref, 'Clean']
+
+# Make a ggplot2 bar graph of the rho values, with the prefs on the y axis.
+ggplot(data = pref_vs_af_spearman, aes(x = rho, y = pref)) +
+  geom_bar(stat = 'identity') +
+  theme_bw() +
+  xlab('Spearman correlation coefficient') +
+  ylab('Preference') +
+  scale_y_discrete(limits = pref_vs_af_spearman$pref[order(pref_vs_af_spearman$rho)])
+```
+
+
+# Classifying
+Classify rare as AC < 10 and frequent as AF > 0.01. Note that singletons were removed.
+
+Note that only sites with at least 60,000 strains non-ambiguously covered are considered here.
+
+```{r define_rare_class}
+intab_nosingletons_distinct <- intab_nosingletons
+intab_nosingletons_distinct$freq_class <- NA
+intab_nosingletons_distinct$freq_class[which(intab_nosingletons_distinct$AC < 10)] <- 'Rare'
+intab_nosingletons_distinct$freq_class[which(intab_nosingletons_distinct$AF > 0.01)] <- 'Freq.'
+intab_nosingletons_distinct <- intab_nosingletons_distinct[which(! is.na(intab_nosingletons_distinct$freq_class)), ]
+```
+
+## Continuous variable differences by freq {.tabset}
+
+### Mean ratio
+Ratio of the mean values of substitutions in the rare vs higher groupings.
+```{r mean_var_plot}
+mean_prefs_raw <- aggregate(. ~ freq_class,
+                            data = intab_nosingletons_distinct[, 8:ncol(intab_nosingletons_distinct)],
+                            FUN = mean)
+mean_prefs_raw <- mean_prefs_raw[, -1]
+
+ratio_df <- data.frame(pref = colnames(mean_prefs_raw),
+                       mean_freq_vs_rare = as.numeric(mean_prefs_raw[1, ]) / as.numeric(mean_prefs_raw[2, ]))
+ratio_df$pref <- pref_map[ratio_df$pref, 'Clean']
+
+ggplot(data = ratio_df, aes(x = mean_freq_vs_rare, y = pref)) +
+  geom_bar(stat = 'identity') +
+  theme_bw() +
+  xlab('Mean freq. vs rare preference') +
+  ylab('Preference') +
+  scale_y_discrete(limits = ratio_df$pref[order(ratio_df$mean_freq_vs_rare)])
+```
+
+### Cohen's D
+```{r cohen_d_plot}
+
+cohend_df <- data.frame(pref = colnames(mean_prefs_raw),
+                        cohen_d = (as.numeric(mean_prefs_raw[1, prefs]) - as.numeric(mean_prefs_raw[2, prefs])) / pref_sd)
+cohend_df$pref <- pref_map[cohend_df$pref, 'Clean']
+ggplot(data = cohend_df, aes(x = cohen_d, y = pref)) +
+  geom_bar(stat = 'identity') +
+  theme_bw() +
+  xlab("Cohen's D") +
+  ylab('Preference') +
+  scale_y_discrete(limits = cohend_df$pref[order(cohend_df$cohen_d)])
+```
+
+# Odd's ratio based on binarizing continuous data {.tabset}
+
+Computed odd's ratio based on a range of cut-offs.
+
+```{r OR_over_range}
+ORs <- list()
+for (pref_type in prefs) {
+  
+  if (length(unique(intab_nosingletons_distinct[, pref_type])) >= 100) {
+    pref_levels <- seq(from = min(intab_nosingletons_distinct[, pref_type]),
+                           to = max(intab_nosingletons_distinct[, pref_type]),
+                           length.out = 100)
+  } else {
+      pref_levels <- sort(unique(intab_nosingletons_distinct[, pref_type]))
+  }
+      
+  # Remove last element (as this doesn't make sense as a lower cut-off).
+  pref_levels <- pref_levels[-length(pref_levels)]
+    
+  var_OR_raw <- mclapply(pref_levels,
+                        function(var_cutoff) {
+                             cutoff_groups <- ifelse(intab_nosingletons_distinct[, pref_type] <= var_cutoff, 'lower_var', 'higher_var')
+                             
+                             var_breakdown <- table(cutoff_groups, intab_nosingletons_distinct[, 'freq_class'])
+                             
+                             var_fisher_out <- fisher.test(var_breakdown)
+                             
+                             return(data.frame(var=pref_type,
+                                               cutoff=var_cutoff,
+                                               highervar_higherfreq=var_breakdown[1, 1],
+                                               lowervar_higherfreq=var_breakdown[2, 1],
+                                               highervar_rarefreq=var_breakdown[1, 2],
+                                               lowervar_rarefreq=var_breakdown[2, 2],
+                                               OR=var_fisher_out$estimate,
+                                               p_value=var_fisher_out$p.value))
+                           },
+                           mc.cores = 6)
+    
+    var_OR_combined <- do.call(rbind, var_OR_raw)
+    ORs[[pref_type]] <- var_OR_combined
+}
+
+OR_var <- do.call(rbind, ORs)
+```
+
+```{r continuous_OR_full}
+OR_var$var <- factor(OR_var$var, levels = prefs)
+
+OR_var$Sig <- ifelse(OR_var$p_value < 0.05, 'yes', 'no')
+
+OR_var <- OR_var[which(! is.infinite(OR_var$OR)), ]
+
+ggplot(data = OR_var, aes(x = cutoff, y = OR, colour = Sig)) +
+    geom_point() +
+    scale_colour_manual(values=c('grey80', 'black')) +
+    theme_bw() +
+    facet_wrap(. ~ var, scales = 'free_x') +
+    ylab("Odd's ratio (rare vs higher MAF)") +
+    xlab('Cutoff (for calling high and low values for variable)') +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+# ROC curve based on binarizing continuous data {.tabset}
+Get true positive and false positive rate estimates per test. Here, a 'positive' is a higher frequency allele.
+This is based on the (questionable) assumption that values below the cut-off are expected to be "rare" and those above are expected to be "higher" frequency.
+
+```{r compute_ROC_values}
+OR_var$positives <- OR_var$lowervar_higherfreq + OR_var$highervar_higherfreq
+OR_var$negatives <- OR_var$lowervar_rarefreq + OR_var$highervar_rarefreq
+
+OR_var$TPR <- OR_var$highervar_higherfreq / OR_var$positives
+OR_var$FPR <- OR_var$highervar_rarefreq / OR_var$negatives
+```
+
+```{r continuous_ROC_full, fig.width=9, fig.height=5}
+OR_var$var <- as.character(OR_var$var)
+OR_var$var <- pref_map[OR_var$var, 'Clean']
+
+OR_var <- OR_var[order(OR_var$TPR, OR_var$FPR), ]
+
+AUC_tab <- data.frame(var = sort(unique(OR_var$var)), AUC = NA)
+rownames(AUC_tab) <- AUC_tab$var
+for (var in rownames(AUC_tab)) {
+  var_subset <- OR_var[OR_var$var == var, ]
+  AUC_tab[var, 'AUC'] <- sum(diff(var_subset$FPR) * (var_subset$TPR[-1] + var_subset$TPR[-length(var_subset$TPR)]) / 2)
+}
+
+OR_var_plot <- ggplot(data = OR_var, aes(x = FPR, y = TPR, colour = var)) +
+  geom_line() +
+  theme_bw() +
+  geom_abline(intercept = 0, slope = 1, linetype = 2, color = 'grey') +
+  ylab("True Positive Rate") +
+  xlab("False Positive Rate") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+AUC_barplot <- ggplot(data = AUC_tab, aes(y = var, x = AUC)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  geom_text(aes(label = round(AUC, 3)), vjust = -0.5, hjust = 1.5, col = "white") +
+  theme_bw() +
+  xlab('AUC') +
+  ylab('Variable') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_discrete(limits = AUC_tab$var[order(AUC_tab$AUC)])
+
+AUC_barplot
+```
+
+
+# Prop of most extreme values rare
+
+Rather than classifying rare and frequent, which doesn't make any sense realistically,
+what does make (more) sense is being able to classify substitutions with extremely low
+probabilities as rare (or invariant, as can be done in future analyses...).
+
+Look at proportion of substitutions that are rare based on the bottom 5% of the scores for each preference.
+A higher proportion here is better!
+
+```{r prop_extreme_rare}
+raw <- list()
+
+for (cutoff in c(0.001, 0.01, 0.1)) {
+
+  prop_rare <- c()
+
+  for (pref in prefs) {
+    pref_quantile <- quantile(intab_nosingletons_distinct[, pref], probs = cutoff)
+    tab_subset <- intab_nosingletons_distinct[which(intab_nosingletons_distinct[, pref] <= pref_quantile), ]
+    prop_rare <- c(prop_rare, length(which(tab_subset$freq_class == 'Rare')) / nrow(tab_subset))
+  }
+  
+  prep_prop_rare_at_extreme <- data.frame(cutoff=as.character(cutoff), pref = prefs, prop_rare = prop_rare)
+  prep_prop_rare_at_extreme[order(prep_prop_rare_at_extreme$prop_rare, decreasing = TRUE), ]
+  
+  prep_prop_rare_at_extreme$pref <- pref_map[prep_prop_rare_at_extreme$pref, 'Clean']
+  
+  raw[[as.character(cutoff)]] <- prep_prop_rare_at_extreme
+  
+}
+
+combined_prop_rare <- do.call(rbind, raw)
+
+combined_prop_rare$pref <- as.character(combined_prop_rare$pref)
+
+overall_rare_prop <- length(which(intab_nosingletons_distinct$freq_class == 'Rare')) / nrow(intab_nosingletons_distinct)
+
+
+combined_prop_rare$cutoff <- factor(combined_prop_rare$cutoff, levels = c('0.1', '0.01', '0.001'))
+
+# Only keep the original Grantham and Miyata as it is information overflow otherwise...
+prefs_to_rm <- c("Grantham (update, recalc.)", "Grantham (update, min-max)", "Grantham (recalc.)", "Grantham (min-max)",
+                 "Miyata (recalc.)", "Miyata (min-max)", "Miyata (update, min-max)", "Miyata (update)")
+
+combined_prop_rare <- combined_prop_rare[which(! combined_prop_rare$pref %in% prefs_to_rm), ]
+combined_prop_rare$pref[which(combined_prop_rare$pref == "Grantham (orig.)")] <- 'Grantham'
+combined_prop_rare$pref[which(combined_prop_rare$pref == "Miyata (orig.)")] <- 'Miyata'
+
+mean_combined_prop_rare <- aggregate(prop_rare ~ pref, data = combined_prop_rare, FUN = mean)
+
+
+ggplot(data = combined_prop_rare, aes(x = prop_rare, y = pref, fill = cutoff)) +
+    geom_bar(stat = 'identity', position = 'dodge') +
+    theme_bw() +
+    xlab('Proportion of subs. in cut-off proportion\nof lowest preferences that are rare') +
+    ylab('Preference') +
+    scale_y_discrete(limits = mean_combined_prop_rare$pref[order(mean_combined_prop_rare$prop_rare)]) +
+  scale_fill_manual(values = c('0.001' = 'grey30', '0.01' = 'grey60', '0.1' = 'grey90')) +
+  coord_cartesian(xlim = c(0.9, 1)) +
+  labs(fill = "Cut-off") +
+    geom_vline(xintercept = overall_rare_prop, linetype = 'dashed', color = 'blue', size = 0.5) +
+  guides(fill = guide_legend(reverse = TRUE))
+```
+
+# Session info {.tabset}
+
+## Hide
+
+## Show
+
+```{r show_info}
+sessionInfo()
+```
