@@ -1,6 +1,7 @@
 # Definitions and useful objects for handling radical and conservative AA changes.
 # Defined based on (1) charge, as well as (2) polarity and volume.
 # As defined by Zhang 2000 and Dagan et al. 2002.
+# (Note that I also generated the Weber radical and conservative categories separately)
 
 aa_charge_groups <- list(
   `positive` = c('R', 'H', 'K'),

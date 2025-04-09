@@ -6,7 +6,7 @@ partition=(1,2,3,3,3,2,2,1,2,4,4,2,4,4,1,3,3,2,2,1)
 AAs='ARNDCQEGHILKMFPSTWYV'
 
 # Create table of radical vs. conservative amino acids based on definition in CoRa paper (Weber et al. 2019).
-def_file = '/home6/gmdougla/projects/aa_selection/aa_metrics/prepped_RvC/RvC_CoRa.tsv.gz'
+def_file = '/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_RvC/RvC_polarity_volumeWeber2019.tsv.gz'
 with gzip.open(def_file, 'wt') as def_rc_fh:
     def_rc_fh.write("aa1\taa2\tsub_type\n")
     for i in range(len(partition)):

@@ -1,6 +1,6 @@
 rm(list = ls(all.names = TRUE))
 
-source('~/Drive/ncsu/aa_selection/scripts/aa_metrics/aa_radical_vs_cons_define.R')
+source('~/Drive/research/aa_distance/aa_distance_explore/aa_metrics/aa_radical_vs_cons_define.R')
 
 # Get easy to parse mappings of the effect of each AA sub., based on:
 # radical vs conservative, Grantham's distance, BLOSUM62, and VTML200.
@@ -17,7 +17,7 @@ for (aa1 in names(charge_sub_change)) {
 
 charge_sub_tab <- do.call(rbind, charge_sub_raw)
 write.table(x = charge_sub_tab,
-            file = "~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/prepped/RvC_charge.tsv",
+            file = gzfile("~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_RvC/RvC_charge.tsv.gz"),
             quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
 
 # By polarity/volume.
@@ -31,13 +31,12 @@ for (aa1 in names(polarity_volume_sub_change)) {
 
 polarity_volume_sub_tab <- do.call(rbind, polarity_volume_sub_raw)
 write.table(x = polarity_volume_sub_tab,
-            file = "~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/prepped/RvC_polarity_volume.tsv",
+            file = gzfile("~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_RvC/RvC_polarity_volume_Zhang2000.tsv.gz"),
             quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
 
 all_aa <- sort(unique(charge_sub_tab$aa1))
 
 # Then convert distant matrices to long-format max-scaled (with small value added) normalized *similarity* matrices.
-
 dist_file_to_minmax_inverted_simfile <- function(dist_file) {
   
   filebase <- gsub('.tsv.gz', '', basename(dist_file))
@@ -63,24 +62,22 @@ dist_file_to_minmax_inverted_simfile <- function(dist_file) {
   
   out_tab <- out_tab[which(out_tab$aa1 != out_tab$aa2), ]
   
-  outfile <- paste0('~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/prepped/', filebase, '.maxscaled.invert.tsv')
+  outfile <- paste0('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity/', filebase, '.maxscaled.invert.tsv.gz')
   
-  write.table(x = out_tab, file = outfile,
-              quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+  write.table(x = out_tab, file = gzfile(outfile), quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
   
   return('Finished.')
 }
 
 
-dist_files <- list.files('~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/distances',
+dist_files <- list.files('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/distances',
                                   pattern='.tsv.gz$', full.names = TRUE)
 
 unique(sapply(dist_files, dist_file_to_minmax_inverted_simfile))
 
 
 # Now do a similar procedure for the similarity matrices, but based on just max-scaling.
-
-sim_files <- list.files('~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/similarities',
+sim_files <- list.files('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/similarities',
                         pattern='.tsv.gz$', full.names = TRUE)
 
 sim_raw <- list()
@@ -114,10 +111,9 @@ unique(sapply(names(sim_raw),
                 
                 out_tab <- out_tab[which(out_tab$aa1 != out_tab$aa2), ]
                 
-                outfile <- paste0('~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/prepped/', x, '.maxscaled.tsv')
+                outfile <- paste0('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity/', x, '.maxscaled.tsv.gz')
                 
-                write.table(x = out_tab, file = outfile,
-                            quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+                write.table(x = out_tab, file = gzfile(outfile), quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
                 
                 return('Finished.')
                 
@@ -127,7 +123,7 @@ unique(sapply(names(sim_raw),
 # Finally, read through substitution matrices (BLOMSUM62 and VTML200), and
 # convert to probabilities from log-odds, and then write out.
 # BLOSUM62
-blosum62 <- read.table('~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/sub_matrices/blosum62.txt.gz',
+blosum62 <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/sub_matrices/blosum62.txt.gz',
                        header = TRUE, sep = '\t', row.names = 1, check.names = FALSE)
 
 blosum62 <- blosum62[all_aa, all_aa]
@@ -143,11 +139,11 @@ blosum62_prob_long <- blosum62_prob_long[, c('aa1', 'aa2', 'blosum62_prob')]
 blosum62_prob_long <- blosum62_prob_long[which(blosum62_prob_long$aa1 != blosum62_prob_long$aa2), ]
 
 write.table(x = blosum62_prob_long,
-            file = '~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/prepped/blosum62.prob.tsv',
-            quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+                   file = gzfile('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity/blosum62.prob.tsv.gz'),
+                   quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
 
 # VTML200
-vtml200 <- read.table('~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/sub_matrices/vtml200.txt.gz',
+vtml200 <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/sub_matrices/vtml200.txt.gz',
                        header = TRUE, sep = ' ', comment.char="#", row.names = 1, check.names = FALSE)
 
 vtml200 <- vtml200[all_aa, all_aa]
@@ -163,5 +159,5 @@ vtml200_prob_long <- vtml200_prob_long[, c('aa1', 'aa2', 'vtml200_prob')]
 vtml200_prob_long <- vtml200_prob_long[which(vtml200_prob_long$aa1 != vtml200_prob_long$aa2), ]
 
 write.table(x = vtml200_prob_long,
-            file = '~/Drive/ncsu/aa_selection/aa_selection_zenodo/aa_metrics/prepped/vtml200.prob.tsv',
-            quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+                   file = gzfile('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity/vtml200.prob.tsv.gz'),
+                   quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
