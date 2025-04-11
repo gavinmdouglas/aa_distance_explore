@@ -15,7 +15,7 @@ freq_sub_AC = defaultdict(list)
 freq_sub_N = dict()
 freq_sub_consensus_aa = dict()
 
-with gzip.open('/home6/gmdougla/projects/aa_selection/ecoli_variants/strain_data/ecoli_seg_subs.tsv.gz', 'rt') as subs_fh:
+with gzip.open('/home6/gmdougla/projects/aa_distance/ecoli_variants/strain_data/ecoli_seg_subs.tsv.gz', 'rt') as subs_fh:
     sub_header = subs_fh.readline().strip().split('\t')
     col_to_i = {}
     for i, col in enumerate(sub_header):
@@ -32,7 +32,7 @@ with gzip.open('/home6/gmdougla/projects/aa_selection/ecoli_variants/strain_data
         freq_sub_consensus_aa[position] = subs_fh_line[col_to_i['consensus_aa']]
 
 # Then move through mean exchangeabilitity table.
-with gzip.open('/home6/gmdougla/projects/aa_selection/ecoli_variants/strain_data/per_codon_exchangeability.tsv.gz', 'rt') as ex_fh:
+with gzip.open('/home6/gmdougla/projects/aa_distance/ecoli_variants/strain_data/per_codon_exchangeability.tsv.gz', 'rt') as ex_fh:
     header = ex_fh.readline().strip().split('\t')
     col_to_i = {}
     for i, col in enumerate(header):

@@ -18,7 +18,7 @@ for FASTA in Vigue2022_dataset/homologous_sequences/local_strains/PF*fasta; do
 
     BASE=$( basename $FASTA .fasta )
 
-    echo "python ~/scripts/aa_selection_ms/fasta_processing/translate.py \
+    echo "python ~/scripts/aa_distance_explore/fasta_processing/translate.py \
             -f $FASTA \
             -o strain_data/translated/$BASE.faa" \
             --silent \
@@ -70,7 +70,7 @@ mkdir consensus_aa_tmp
 for AA in strain_data/translated_aligned/*faa; do
     FASTABASE=$( basename $AA .faa )
 
-    echo "python ~/scripts/aa_selection_ms/fasta_processing/parse_aa_consensus.py \
+    echo "python ~/scripts/aa_distance_explore/fasta_processing/parse_aa_consensus.py \
             -i $AA \
             -o consensus_aa_tmp/$FASTABASE.faa" \
         >> consensus_aa_cmds.sh
@@ -96,7 +96,7 @@ mkdir seg_subs_tmp
 for AA in strain_data/translated_aligned/*faa; do
     FASTABASE=$( basename $AA .faa )
 
-    echo "python ~/scripts/aa_selection_ms/fasta_processing/segregating_subs.py \
+    echo "python ~/scripts/aa_distance_explore/fasta_processing/segregating_subs.py \
                 -c strain_data/translated_aligned_consensus.faa.gz \
                 -f $AA \
                 -o seg_subs_tmp/$FASTABASE.tsv" \
@@ -112,7 +112,7 @@ python ~/local/parallel_joblog_summary/joblog_summary.py \
 
 Get header (by re-running command with the `--header` option too) and combine individual files.
 ```
-python ~/scripts/aa_selection_ms/fasta_processing/segregating_subs.py \
+python ~/scripts/aa_distance_explore/fasta_processing/segregating_subs.py \
     -c strain_data/translated_aligned_consensus.faa.gz \
     -f strain_data/translated_aligned/PF00004-GA4805AA_00441.faa \
     -o seg_subs_header.tsv \
@@ -131,7 +131,7 @@ for AA in strain_data/translated_aligned/*faa; do
     FASTABASE=$( basename $AA .faa )
     NUCL="Vigue2022_dataset/homologous_sequences/local_strains/$FASTABASE.fasta"
 
-    echo "python /home6/gmdougla/scripts/aa_selection_ms/fasta_processing/align_codons_from_aligned_aa.py \
+    echo "python ~/scripts/aa_distance_explore/fasta_processing/align_codons_from_aligned_aa.py \
 	        -a $AA \
 	        -n $NUCL \
 	        -o strain_data/codon_aligned/$FASTABASE.fna" \
@@ -153,7 +153,7 @@ AA="strain_data/translated_aligned_consensus.faa.gz"
 for CODON in strain_data/codon_aligned/*fna; do
     FASTABASE=$( basename $CODON .fna )
 
-    echo "python ~/scripts/aa_selection_ms/fasta_processing/parse_codon_consensus.py \
+    echo "python ~/scripts/aa_distance_explore/fasta_processing/parse_codon_consensus.py \
             -c $CODON \
             -a $AA \
             -o consensus_codon_tmp/$FASTABASE.fna" \
@@ -170,7 +170,6 @@ cat consensus_codon_tmp/*fna > strain_data/codon_aligned_consensus.fna
 rm -r consensus_codon_tmp
 ```
 
-
 1. Infer amino acid preferences
 
 Infer amino acid preferences per site based on consensus sequences.
@@ -180,11 +179,11 @@ Infer amino acid preferences per site based on consensus sequences.
 Get amino acid preferences based on all 'similarity' metrics.
 
 ```
-python ~/scripts/aa_selection_ms/compute_prefs/fasta_to_prefs.py \
+python ~/scripts/aa_distance_explore/compute_prefs/fasta_to_prefs.py \
 	-f strain_data/translated_aligned_consensus.faa.gz \
 	-o prefs \
-	-r /home6/gmdougla/projects/aa_selection/aa_metrics/prepped_RvC \
-	-s /home6/gmdougla/projects/aa_selection/aa_metrics/prepped_similarity \
+	-r /home6/gmdougla/projects/aa_distance/aa_metrics/prepped_RvC \
+	-s /home6/gmdougla/projects/aa_distance/aa_metrics/prepped_similarity \
 	-p 0.05 \
 	-i NA
 ```
@@ -225,11 +224,11 @@ mkdir codon_e_tmp
 for CODON in strain_data/codon_aligned/*fna; do
     FASTABASE=$( basename $CODON .fna )
 
-    echo "python ~/scripts/aa_selection_ms/fasta_processing/protein_site_exchangeability.py \
+    echo "python ~/scripts/aa_distance_explore/fasta_processing/protein_site_exchangeability.py \
             --id $FASTABASE \
             -c strain_data/codon_aligned_consensus.fna.gz -a strain_data/translated_aligned_consensus.faa.gz \
-            -e ~/projects/aa_selection/aa_metrics/codon_exchangeabilities.tsv.gz \
-            -v ~/projects/aa_selection/ecoli_variants/prefs/vespag/ \
+            -e ~/projects/aa_distance/aa_metrics/codon_exchangeabilities.tsv.gz \
+            -v ~/projects/aa_distance/ecoli_variants/prefs/vespag/ \
             --codon_alignments strain_data/codon_aligned \
             -o codon_e_tmp/$FASTABASE.tsv" >> protein_site_exchangeability_cmds.sh
 done
@@ -243,33 +242,39 @@ python ~/local/parallel_joblog_summary/joblog_summary.py \
 
 Get header (by re-running command with the `--header` option too) and combine individual files.
 ```
-python ~/scripts/aa_selection_ms/fasta_processing/protein_site_exchangeability.py \
+python ~/scripts/aa_distance_explore/fasta_processing/protein_site_exchangeability.py \
             --id $FASTABASE \
-            -c strain_data/codon_aligned_consensus.fna.gz -a strain_data/translated_aligned_consensus.faa.gz \
-            -e ~/projects/aa_selection/aa_metrics/codon_exchangeabilities.tsv.gz \
-            -v ~/projects/aa_selection/ecoli_variants/prefs/vespag/ \
+            -c strain_data/codon_aligned_consensus.fna.gz \
+            -a strain_data/translated_aligned_consensus.faa.gz \
+            -e ~/projects/aa_distance/aa_metrics/codon_exchangeabilities.tsv.gz \
+            -v ~/projects/aa_distance/ecoli_variants/prefs/vespag/ \
             --codon_alignments strain_data/codon_aligned \
             --header \
             -o HEADER_tmp.tsv
 head -n 1 HEADER_tmp.tsv > strain_data/per_codon_exchangeability.tsv
 cat codon_e_tmp/*tsv >> strain_data/per_codon_exchangeability.tsv
 rm -r codon_e_tmp HEADER_tmp.tsv
+gzip strain_data/per_codon_exchangeability.tsv
 ```
 
 1. Create combined tables
 
 Get combined table of substitutions and preferences.
 ```
-python ~/scripts/aa_selection_ms/fasta_processing/combine_subs_and_prefs.py \
+python ~/scripts/aa_distance_explore/fasta_processing/combine_subs_and_prefs.py \
     -s strain_data/ecoli_seg_subs.tsv.gz \
     -f prefs/ \
     -o strain_data/ecoli_seg_subs_w_prefs.tsv
+
+gzip strain_data/ecoli_seg_subs_w_prefs.tsv
 ```
 
 Also get a table of mean exchangeability per site per preference type,
 split by whether the site is always invariant or is segregating (at any frequency).
 This is a hard-coded script.
 ```
-python /home6/gmdougla/scripts/aa_selection_ms/allele_freq_vs_predicted_effects/ecoli/ecoli_subset_invariant_and_subs.py > \
+python /home6/gmdougla/scripts/aa_distance_explore/allele_freq_vs_predicted_effects/ecoli/ecoli_subset_invariant_and_subs.py > \
     strain_data/ecoli_per_codon_exchangeability_invariant_vs_freq.tsv
+
+gzip strain_data/ecoli_per_codon_exchangeability_invariant_vs_freq.tsv.gz
 ```

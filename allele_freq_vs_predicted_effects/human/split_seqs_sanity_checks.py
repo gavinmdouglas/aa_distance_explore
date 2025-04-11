@@ -8,14 +8,16 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from functions import read_fasta
 
-orig = read_fasta('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/gencode_w_snv.faa')
+project_folder = '/home6/gmdougla/projects/aa_distance/'
 
-split_files = os.listdir('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/gencode_w_snv_split')
+orig = read_fasta(project_folder + '/human_variants/nonsyn_snvs/gencode_w_snv.faa')
+
+split_files = os.listdir(project_folder + '/human_variants/nonsyn_snvs/gencode_w_snv_split')
 
 parsed_ids = set()
 num_confirmed = 0
 for split_file in split_files:
-    split = read_fasta(os.path.join('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/gencode_w_snv_split', split_file))
+    split = read_fasta(os.path.join(project_folder + '/human_variants/nonsyn_snvs/gencode_w_snv_split', split_file))
     for id in split:
         if id in parsed_ids:
             sys.exit('Error: ' + id + ' found in multiple split files.')

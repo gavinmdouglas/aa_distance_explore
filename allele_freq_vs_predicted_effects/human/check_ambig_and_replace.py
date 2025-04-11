@@ -13,7 +13,7 @@ from functions import read_fasta, write_fasta, possible_aa
 
 # Also, replace U with C.
 
-infasta = read_fasta('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/gencode_w_snv.faa')
+infasta = read_fasta('/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/gencode_w_snv.faa')
 
 final_seqs = {}
 
@@ -30,4 +30,4 @@ for seqid, seq in infasta.items():
         if final_seqs[seqid][i] not in possible_aa:
             sys.exit('Error: ' + seqid + ' contains an unknown residue: ' + final_seqs[seqid][i] + '.')
 
-write_fasta(final_seqs, '/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/gencode_w_snv_noambig.faa')
+write_fasta(final_seqs, '/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/gencode_w_snv_noambig.faa')

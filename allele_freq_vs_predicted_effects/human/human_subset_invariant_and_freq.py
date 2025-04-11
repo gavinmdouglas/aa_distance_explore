@@ -12,7 +12,7 @@ freq_sub_maf = defaultdict(list)
 freq_subs_AC = defaultdict(list)
 freq_sub_consensus_aa = dict()
 
-with gzip.open('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/human_snvs_w_prefs.tsv.gz', 'rt') as subs_fh:
+with gzip.open('/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/human_snvs_w_prefs.tsv.gz', 'rt') as subs_fh:
     sub_header = subs_fh.readline().strip().split('\t')
     col_to_i = {}
     for i, col in enumerate(sub_header):
@@ -27,7 +27,7 @@ with gzip.open('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs
         freq_sub_consensus_aa[position] = subs_fh_line[col_to_i['ref_aa']]
 
 # Then move through mean exchangeabilitity table.
-with gzip.open('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/per_codon_exchangeability.tsv.gz', 'rt') as ex_fh:
+with gzip.open('/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/per_codon_exchangeability.tsv.gz', 'rt') as ex_fh:
     header = ex_fh.readline().strip().split('\t')
     col_to_i = {}
     for i, col in enumerate(header):

@@ -11,20 +11,20 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # Parse RaSP scores to amino acid preferences for input to phydms.
-if not os.path.exists("/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/prefs/rasp/"):
-    os.makedirs("/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/prefs/rasp/")
+if not os.path.exists("/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/prefs/rasp/"):
+    os.makedirs("/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/prefs/rasp/")
 
 rasp_to_prot = {}
-with open('/home6/gmdougla/projects/aa_selection/human_variants/gencode/rasp_gencode_map.tsv', 'r') as map_fh:
+with open('/home6/gmdougla/projects/aa_distance/human_variants/gencode/rasp_gencode_map.tsv', 'r') as map_fh:
     map_fh.readline()
     for line in map_fh:
         line = line.strip().split("\t")
         rasp_to_prot[line[0].split(';')[1]] = line[1].split('|')[0]
 
-prot_seqs = read_fasta('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/gencode_w_snv.faa')
+prot_seqs = read_fasta('/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/gencode_w_snv.faa')
 
 for rasp_id in rasp_to_prot.keys():
-    rasp_predfile = '/home6/gmdougla/projects/aa_selection/prerun_struc_prefs/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2/' + 'rasp_pred_' + rasp_id + 'A.csv'
+    rasp_predfile = '/home6/gmdougla/projects/aa_distance/prerun_struc_prefs/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2/' + 'rasp_pred_' + rasp_id + 'A.csv'
     
     prot_id = rasp_to_prot[rasp_id]
     if prot_id not in prot_seqs.keys():
@@ -38,7 +38,7 @@ for rasp_id in rasp_to_prot.keys():
     pos_to_refaa = dict()
     aa_pref_df = pd.DataFrame(index=pos_set, columns=sorted(list(possible_aa)))
 
-    rasp_predfile = '/home6/gmdougla/projects/aa_selection/prerun_struc_prefs/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2/' + 'rasp_pred_' + rasp_id + 'A.csv'
+    rasp_predfile = '/home6/gmdougla/projects/aa_distance/prerun_struc_prefs/rasp_preds_alphafold_UP000005640_9606_HUMAN_v2/' + 'rasp_pred_' + rasp_id + 'A.csv'
     with open(rasp_predfile, 'r') as rasp_pred_fh:
         pred_header = rasp_pred_fh.readline().rstrip().split(',')
         col_map = {}
@@ -72,4 +72,4 @@ for rasp_id in rasp_to_prot.keys():
 
     aa_pref_df.index.name = "site"
 
-    aa_pref_df.to_csv('/home6/gmdougla/projects/aa_selection/human_variants/nonsyn_snvs/prefs/rasp/' + prot_id + '.csv')
+    aa_pref_df.to_csv('/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/tmp/' + prot_id + '.csv')
