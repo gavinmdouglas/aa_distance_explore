@@ -6,7 +6,20 @@ import gzip
 # (mainly distances, but also some similarities and sub matrices)
 # into distance matrix format required by PAML.
 
-outdir = '/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/paml_format_dist'
+def transform_to_range_compact(numbers, min_val=0.01, max_val=0.99):
+    if not numbers or min(numbers) == max(numbers):
+        return [min_val] * len(numbers)
+    
+    input_min, input_max = min(numbers), max(numbers)
+    return [((x - input_min) / (input_max - input_min)) * (max_val - min_val) + min_val 
+            for x in numbers]
+
+
+tmp = [-0.44, 0.05, 0.2, 0.8, 0.98, 0.9999]
+print(tmp)
+print(transform_to_range_compact(tmp, min_val=0.01, max_val=0.99))
+sys.exit()
+outdir = '/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/paml_format_dist_consistent'
 
 aa_order = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K',
             'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
@@ -86,8 +99,9 @@ for sim_file in sim_files:
                 line = line.strip().split('\t')
                 aa1 = line[0]
                 aa2 = line[1]
-                dist[(aa1, aa2)] = 1.0 - float(line[2])
-    
+                dist_val = 1.0 - float(line[2])
+                dist[(aa1, aa2)] = dist_val
+
     # Now write out the distance matrix
     with open(os.path.join(outdir, sim_file.replace('.tsv.gz', '.txt')), 'w') as out_fh:
         for aa1 in aa_order:
