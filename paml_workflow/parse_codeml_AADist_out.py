@@ -93,6 +93,7 @@ def main():
 
         # Check that all hits are just one value.
         if len(tree_length_hits) != 1:
+            print(args.input, file=sys.stderr)
             sys.exit("Error: Zero or more than one tree length hit found.")
         if len(kappa_hits) != 1:
             sys.exit("Error: Zero or more than one kappa hit found.")
