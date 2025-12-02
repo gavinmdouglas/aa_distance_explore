@@ -177,7 +177,6 @@ Infer amino acid preferences per site based on consensus sequences.
 *All similarity metrics*
 
 Get amino acid preferences based on all 'similarity' metrics.
-
 ```
 python ~/scripts/aa_distance_explore/compute_prefs/fasta_to_prefs.py \
 	-f strain_data/translated_aligned_consensus.faa.gz \

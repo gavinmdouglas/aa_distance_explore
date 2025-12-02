@@ -13,9 +13,10 @@ with gzip.open('/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_me
         line = line.strip().split('\t')
         short_to_tri[line[2]] = line[1]
 
-#sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent"
-#sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_RvC/prepped_similarity_consistent"
-sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent"
+# Needed to uncomment the folders to run (and ran one at a time, as needed)
+sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent"
+# sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_RvC/prepped_similarity_consistent"
+# sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent"
 
 sim_files = os.listdir(sim_folder)
 sim_files = [f for f in sim_files if f.endswith('.tsv.gz')]

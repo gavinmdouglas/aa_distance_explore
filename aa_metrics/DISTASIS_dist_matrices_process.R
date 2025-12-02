@@ -48,9 +48,6 @@ focal_sim_files <- c("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo
                      "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/miyata_orig.tsv.gz",
                      "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/AAOntology-PCs_Others.tsv.gz")
 
-metrics_map <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/metrics_raw_to_clean.tsv.gz',
-                          sep = '\t', header = TRUE, stringsAsFactors = FALSE, row.names = 1)
-
 aas <- sort(rownames(aa_map))
 
 dist_dummy <- data.frame(matrix(NA, nrow=20, ncol=20))
@@ -113,11 +110,13 @@ transform_to_range <- function(numbers, min_val = 0.01, max_val = 0.99) {
   return(((numbers - input_min) / (input_max - input_min)) * (max_val - min_val) + min_val)
 }
 
-sim_out <- list()
-
 for (focal_combo_i in seq_along(focal_combinations)) {
   focal_combo <- focal_combinations[[focal_combo_i]]
   
+  if (! all(focal_combo %in% names(dist_tabs))) {
+    stop(paste("Missing metrics:", paste(focal_combo[!focal_combo %in% names(dist_tabs)], collapse=", ")))
+  }
+
   focal_combo_name <- paste(focal_combo, collapse = "_")
   
   all_dist_matrices <- array(0, dim = c(20, 20, length(focal_combo)))
@@ -155,14 +154,13 @@ for (focal_combo_i in seq_along(focal_combinations)) {
   
   out_tab <- reshape2::melt(pairwise_dist, id.vars = "aa1")
   colnames(out_tab) <- c('aa1', 'aa2', 'similarity')
+  
   out_tab <- out_tab[out_tab$aa1 != out_tab$aa2, ]
   
-  out_tab$similarity <- transform_to_range(out_tab$similarity)
+  out_tab$similarity <- 1 - transform_to_range(out_tab$similarity)
   
   write.table(x = out_tab,
-              file = paste0("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent/", "DISTATIS_", focal_combo_name, ".tsv"),
+              file = gzfile(paste0("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent/", "DISTATIS_", focal_combo_name, ".tsv.gz")),
               quote = FALSE, col.names = TRUE, row.names = FALSE, sep = "\t")
 
-  
-  sim_out[[focal_combo_name]] <- out_tab
 }

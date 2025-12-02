@@ -233,7 +233,6 @@ for dms_id in dms_ids:
         if len(buried_gene_robust_score[aa_combo]) > 0:
             buried_gene_median_robust_score[aa_combo].append(np.median(buried_gene_robust_score[aa_combo]))
 
-
 header = ['ref_aa', 'mut_aa',
           'exposed_mean_standard_score', 'N_exposed_mean_standard_score',
           'exposed_median_robust_score', 'N_exposed_median_robust_score',
