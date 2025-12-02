@@ -259,7 +259,7 @@ def read_rad_vs_cons_effects(sub_file,
     return sub_effects
 
 
-def read_sim_matrix(sub_sim_file, identity_set='max'):
+def read_sim_matrix(sub_sim_file, identity_set='one'):
     '''
     Read through a substitution similarity file and return a dictionary
     of substitution matrix values (where each AA sub pair is a tuple).
