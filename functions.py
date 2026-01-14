@@ -133,6 +133,7 @@ def vespag_dir_to_prefs(in_dir, out_dir, all_sites_present=True, ref_aa_file=Non
                 # Make sure value is between 0 and 1.
                 if float(linesplit[1]) <= 0 or float(linesplit[1]) >= 1:
                     sys.exit('Preference value not between 0 and 1: ' + linesplit[1])
+
                 inferred_val.append(float(linesplit[1]))
 
                 if len(derived_AAs) == 19 and len(inferred_val) == 19:
@@ -195,16 +196,17 @@ def seq_sub_prob_prefs(seq, effect_tab, outfile=None):
     Given a sequence and a dictionary of the prob. of each AA sub. type,
     return an amino acid preference table.
     '''
-    prefs = pd.DataFrame(np.nan,
-                        index=range(1, 1, len(seq) + 1),
-                        columns=sorted_aa)
+    n_aa = len(sorted_aa)
+    n_pos = len(seq)
+    data = np.empty((n_pos, n_aa))
 
-    for i in range(len(seq)):
-        seq_aa = seq[i]
+    for i, seq_aa in enumerate(seq):
         if seq_aa not in possible_aa:
-            continue
-        for sub_aa in sorted_aa:
-            prefs.loc[i + 1, sub_aa] = effect_tab[(seq_aa, sub_aa)]
+            data[i, :] = np.nan
+        else:
+            data[i, :] = [effect_tab[(seq_aa, sub_aa)] for sub_aa in sorted_aa]
+
+    prefs = pd.DataFrame(data, index=range(1, n_pos + 1), columns=sorted_aa)
 
     # Total sum scale each row.
     prefs = prefs.div(prefs.sum(axis=1), axis=0)

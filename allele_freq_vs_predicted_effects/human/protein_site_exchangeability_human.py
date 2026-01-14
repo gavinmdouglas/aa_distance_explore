@@ -15,8 +15,10 @@ def main():
     parser = argparse.ArgumentParser(
         description='''
         Determine amino acid mean exchangeability for protein consensus sequences,
-        and (1) mean codon exchangebilities pre-calculated for codons, and (2) VespaG preferences per site.
+        (1) VespaG and (2) RaSP preferences per site.
         Will run one protein ID at a time, to save time.
+
+        Originally included all exchangeability metrics, but this lead to unnecessary redundancy.
 
         Modified for human SNVs, as these are in a specific format.
         ''',
@@ -40,12 +42,6 @@ def main():
                         metavar='PATH',
                         type=str,
                         help='Path to FASTA of amino acid consensus sequences.',
-                        required=True)
-
-    parser.add_argument('-e', '--exchange_codon_table',
-                        metavar='PATH',
-                        type=str,
-                        help='Path to "codon_exchangeabilities.tsv.gz"',
                         required=True)
 
     parser.add_argument('-v', '--vespag',
@@ -78,27 +74,23 @@ def main():
     aa_seqs = read_fasta(args.aa)
     protein = aa_seqs[seq_id]
 
-    codon_e = pd.read_csv(args.exchange_codon_table,
-                          sep='\t', index_col=0, header=0)
-
     vespag_file = os.path.join(args.vespag, seq_id + '.csv')
     vespag_prefs = pd.read_csv(vespag_file, sep=',', index_col=0, header=0)
 
     rasp_file = os.path.join(args.rasp, seq_id + '.csv')
     rasp_prefs = pd.read_csv(rasp_file, sep=',', index_col=0, header=0)
 
-    similarity_prefs = list(codon_e.columns[2: -1])
-
     with open(args.output, 'w') as out_fh:
         if args.header:
-            print('\t'.join(['Protein', 'Pos', 'Consensus_AA'] + similarity_prefs + ['VespaG', 'rasp']), file=out_fh)
+            print('\t'.join(['protein', 'pos', 'consensus_codon', 'consensus_aa', 'vespag', 'rasp']), file=out_fh)
 
         bases = ['A', 'C', 'G', 'T']
 
         for i in range(len(protein)):
             aa1 = protein[i]
-            outline = [seq_id, str(i), aa1]
             codon = gene[i * 3: (i * 3) + 3]
+            outline = [seq_id, str(i), codon, aa1]
+
 
             if codon not in code1_codon_to_aa.keys() or code1_codon_to_aa[codon] not in possible_aa:
                 continue
@@ -111,9 +103,6 @@ def main():
                 print('Expected AA: ' + aa1)
                 print('Codon AA: ' + code1_codon_to_aa[codon])
                 sys.exit('Error: codon and amino acid do not match.')
-
-            for pref in similarity_prefs:
-                outline.append(str(codon_e.loc[codon, pref]))
 
             # For VespaG.
             num_nonsyn_single = 0

@@ -6,38 +6,20 @@ from collections import defaultdict
 import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from functions import (read_rad_vs_cons_effects,
-                       read_sim_matrix,
+from functions import (read_sim_matrix,
                        continuous_prefs_dict_sanity,
                        code11_codon_to_aa)
 
 # Compute mean exchangeabilities based on average of amino acid similarities possible for all possible single (nn-synonymous) nucleotide changes.
+sim_folder = '/home6/gmdougla/projects/aa_distance/aa_metrics/prepped_similarity_consistent'
 
-rc_folder = '/home6/gmdougla/projects/aa_distance/aa_metrics/prepped_RvC'
-sim_folder = '/home6/gmdougla/projects/aa_distance/aa_metrics/prepped_similarity'
-
-rc_files = [f for f in os.listdir(rc_folder) if f.endswith('.tsv.gz')]
 sim_files = [f for f in os.listdir(sim_folder) if f.endswith('.tsv.gz')]
-if len(rc_files) == 0:
-    sys.exit('Error: No radical vs conservative effect files found.')
-elif len(sim_files) == 0:
+if len(sim_files) == 0:
     sys.exit('Error: No similarity effect files found.')
 
 sub_maps = []
 tab_ids = []
-for rc_file in rc_files:
-    r_vs_c_dict = read_rad_vs_cons_effects(sub_file=os.path.join(rc_folder, rc_file),
-                                            swap_rad_cons=True,
-                                            rad_pref=0.05)
-    
-    dict_check = continuous_prefs_dict_sanity(r_vs_c_dict)
-    if not dict_check:
-        sys.exit('Error: Radical vs conservative effect table is not formatted correctly: ' + os.path.join(rc_folder, rc_file))
-
-    sub_maps.append(r_vs_c_dict)
-    tab_ids.append(rc_file.split('.')[0])
-
-for sim_file in sim_files:
+for sim_file in sorted(sim_files):
     sim_dict = read_sim_matrix(sub_sim_file=os.path.join(sim_folder, sim_file),
                                 identity_set='NA')
 

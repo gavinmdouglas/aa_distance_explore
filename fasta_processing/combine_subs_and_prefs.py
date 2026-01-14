@@ -79,8 +79,8 @@ def main():
                 raw_sub_infos = subs_info[protein_id][pos]
                 for raw_sub_info in raw_sub_infos:
                     outline = [protein_id, str(pos)] + raw_sub_info
-                    derived_AA = raw_sub_info[1]
-                    exp_ref_aa = raw_sub_info[0]
+                    derived_AA = raw_sub_info[3]
+                    exp_ref_aa = raw_sub_info[1]
                     for pref_folder in pref_folders:
                         if pos in prefs_per_protein[pref_folder]:
                             # Make sure exp_ref_aa value is empty.

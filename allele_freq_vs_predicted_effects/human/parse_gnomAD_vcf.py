@@ -100,6 +100,8 @@ def main():
         variant_effect = record.info['vep']
         variant_effect_cat = '\t'.join(variant_effect)
         if "missense_variant" in variant_effect_cat:
+            print(record)
+            sys.exit()
             for effect in variant_effect:
                 effect = effect.split('|')
                 if len(effect) < len(vep_index_map):

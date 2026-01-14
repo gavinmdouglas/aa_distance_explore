@@ -34,12 +34,11 @@ def main():
                         metavar='PATH',
                         type=str)
 
-    parser.add_argument('-s', '--sim_folder',
+    parser.add_argument('-s', '--sim_file',
                         help='''
-                            Folder containing gzipped tables breaking down similarities of all pairwise amino acids.
+                            File containing gzipped table breaking down similarities of all pairwise amino acids.
                             Usually symmetrical, but not necessarily.
                             "aa1" is ancestral.
-                            File must end in ".tsv.gz".
                             Also, the category name will be the file prefix until the first ".".
                         ''',
                         required=True,
@@ -61,45 +60,31 @@ def main():
 
     if not os.path.exists(args.fasta):
         sys.exit('Error: FASTA file does not exist.')
-
-    # Make sure that input folders exist and there are matching files within.
-    elif not os.path.exists(args.sim_folder):
-        sys.exit('Error: Similarity effect folder does not exist.')
-    
-    sim_files = [f for f in os.listdir(args.sim_folder) if f.endswith('.tsv.gz')]
-    if len(sim_files) == 0:
-        sys.exit('Error: No similarity effect files found.')
     
     seqs = read_fasta(args.fasta, cut_header=True)
 
     if len(seqs) == 0:
         sys.exit('Error: No sequences found in FASTA.')
+    
+    sim_dict = read_sim_matrix(sub_sim_file=args.sim_file,
+                               identity_set=args.identity_fill)
 
-    sub_maps = []
-    tab_ids = []
-    for sim_file in sim_files:
-        sim_dict = read_sim_matrix(sub_sim_file=os.path.join(args.sim_folder, sim_file),
-                                   identity_set=args.identity_fill)
+    dict_check = continuous_prefs_dict_sanity(sim_dict)
+    if not dict_check:
+        sys.exit('Error: Similarity table is not formatted correctly: ' + args.sim_file)
 
-        dict_check = continuous_prefs_dict_sanity(sim_dict)
-        if not dict_check:
-            sys.exit('Error: Similarity table is not formatted correctly: ' + os.path.join(args.sim_folder, sim_file))
-
-        sub_maps.append(sim_dict)
-        tab_ids.append(sim_file.split('.')[0])
+    pref_id = os.path.basename(args.sim_file).split('.')[0]
 
     if not os.path.exists(args.out_folder):
         os.makedirs(args.out_folder)
 
-    for effect_type in tab_ids:
-        if not os.path.exists(args.out_folder + '/' + effect_type):
-            os.makedirs(args.out_folder + '/' + effect_type)
+    outfolder = args.out_folder + '/' + pref_id
+    if not os.path.exists(outfolder):
+        os.makedirs(outfolder)
 
     for seq_id, seq in seqs.items():
-        for sub_map, effect_type in zip(sub_maps, tab_ids):
-            outfile = args.out_folder + '/' + effect_type + '/' + seq_id + '.csv'
-            prefs = seq_sub_prob_prefs(seq=seq, effect_tab=sub_map, outfile=outfile)
-
+        outfile = outfolder + '/' + seq_id + '.csv'
+        seq_sub_prob_prefs(seq=seq, effect_tab=sim_dict, outfile=outfile)
 
 if __name__ == '__main__':
     main()

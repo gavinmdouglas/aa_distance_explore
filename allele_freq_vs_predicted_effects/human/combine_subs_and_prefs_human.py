@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from functions import possible_aa
 
 # Hard-coded script specifically for Human SNVs, as these are in a specific format.
+# Keep only most frequent substitution per protein position.
 
 considered_proteins = set()
 
@@ -35,6 +36,18 @@ for snvfile in snvfiles:
             if protein_id in considered_proteins:
                 subs_info[protein_id][protein_pos].append(sub_line[6:])
                 pos_per_protein[protein_id].add(protein_pos)
+
+for protein_id in subs_info.keys():
+    for protein_pos in subs_info[protein_id].keys():
+        raw_sub_infos = subs_info[protein_id][protein_pos]
+        max_count = 0
+        i_to_keep = None
+        for i in range(len(raw_sub_infos)):
+            count = int(raw_sub_infos[i][2])
+            if count > max_count:
+                max_count = count
+                i_to_keep = i
+        subs_info[protein_id][protein_pos] = [raw_sub_infos[i_to_keep]]
 
 pref_master_folder = '/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/prefs'
 pref_folders = sorted([f for f in os.listdir(pref_master_folder) if os.path.isdir(os.path.join(pref_master_folder, f))])

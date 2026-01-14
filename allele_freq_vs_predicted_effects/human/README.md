@@ -1,3 +1,5 @@
+### Human analysis
+
 Commands run to explore allele frequencies (and invariant sites) for non-synonymous mutations in human proteins.
 
 First, downloaded all gnomAD VCFs and gencode protein FASTA.
@@ -45,45 +47,7 @@ python /home6/gmdougla/scripts/aa_distance_explore/allele_freq_vs_predicted_effe
 ```
 
 
-Infer amino acid preferences per site based on consensus sequences.
-
-*All similarity metrics*
-
-Get amino acid preferences based on all 'similarity' metrics.
-
-```
-# Split into 32 chunks to make it easily parallelizable:
-python /home6/gmdougla/scripts/aa_distance_explore/fasta_processing/split_fasta.py -f gencode_w_snv.faa -n 32 -o gencode_w_snv_split
-
-# Quick sanity check:
-/home6/gmdougla/scripts/aa_distance_explore/allele_freq_vs_predicted_effects/human/split_seqs_sanity_checks.py
-
-mkdir prefs_by_chunk
-for FASTA in gencode_w_snv_split/*faa; do
-	CHUNK=$( basename $FASTA .faa )
-	echo "python ~/scripts/aa_distance_explore/compute_prefs/fasta_to_prefs.py \
-				-f $FASTA \
-				-o prefs_by_chunk/$CHUNK \
-				-r /home6/gmdougla/projects/aa_distance/aa_metrics/prepped_RvC \
-				-s /home6/gmdougla/projects/aa_distance/aa_metrics/prepped_similarity \
-				-p 0.05 \
-				-i NA" >> fasta_to_prefs_cmds.sh
-done
-
-cat fasta_to_prefs_cmds.sh | parallel -j 32 --joblog fasta_to_prefs_cmds.log
-
-python ~/local/parallel_joblog_summary/joblog_summary.py \
-            --cmds fasta_to_prefs_cmds.sh \
-            --log fasta_to_prefs_cmds.log
-
-# Then move them all into one folder.
-mkdir prefs
-for METRIC in prefs_by_chunk/split_0/*; do
-	METRIC=$( basename $METRIC )
-	mkdir prefs/$METRIC
-	mv prefs_by_chunk/*/$METRIC/* prefs/$METRIC
-done
-```
+Infer amino acid preferences per site based on consensus sequences, with VespaG and RaSP.
 
 VespaG threw error due to X residues. Ran this command to convert all X residues to M (which were in the beginning of sequence). Note that predictions for these sites should be skipped, just added to get it working. Also replaced all 'U' residues with 'C' (which again was just to get VespaG running, and predictions for these sites were ignored in downstream analyses). Written to `gencode_w_snv_noambig.faa`.
 
@@ -107,7 +71,7 @@ parallel -j 60 --eta 'gzip {}' ::: /mfs/gdouglas/projects/aa_distance/vespag/hum
 
 Then (in the same folder as in earlier commands) to get the VespaG predictions in preference-format:
 ```
-python ~/scripts/aa_distance/compute_prefs/vespag_to_pref.py \
+python ~/scripts/aa_distance_explore/compute_prefs/vespag_to_pref.py \
 	-i vespag_out \
 	-o prefs/vespag \
 	--ref_fill NA
@@ -115,10 +79,16 @@ python ~/scripts/aa_distance/compute_prefs/vespag_to_pref.py \
 
 To get RASP scores per protein:
 ```
+mkdir /home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/tmp
+
 python ~/scripts/aa_distance_explore/allele_freq_vs_predicted_effects/human/raw_rasp_scores_per_protein.py
+
+mv tmp/ prefs/rasp
 ```
 
 Mean codon exchangeabilities per site
+
+Originally parsed these and similar values for all AA exchangeabilities, but this of course leads to a lot of redundancy and greatly increases file size, so avoided.
 
 ```
 grep '>' gencode_w_snv.fna | sed 's/>//g' > gencode_w_snv_ids.txt
@@ -129,7 +99,6 @@ for PROTID in $( cat gencode_w_snv_ids.txt ); do
             --id $PROTID \
             -c gencode_w_snv.fna \
 			-a gencode_w_snv.faa \
-            -e ~/projects/aa_distance/aa_metrics/codon_exchangeabilities.tsv.gz \
             -v prefs/vespag/ \
 			-r prefs/rasp/ \
             -o codon_e_tmp/$PROTID.tsv" \
@@ -149,7 +118,6 @@ python ~/scripts/aa_distance_explore/allele_freq_vs_predicted_effects/human/prot
 	--id ENSP00000005178.5 \
 	-c gencode_w_snv.fna \
 	-a gencode_w_snv.faa \
-	-e ~/projects/aa_distance/aa_metrics/codon_exchangeabilities.tsv.gz \
 	-v prefs/vespag/ \
 	-r prefs/rasp/ \
 	--header \

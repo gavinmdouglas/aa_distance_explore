@@ -38,9 +38,9 @@ with gzip.open('/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/
 
     for line in ex_fh:
         line = line.strip().split('\t')
-        position = line[col_to_i['Protein']] + ';' + line[col_to_i['Pos']]
+        position = line[col_to_i['protein']] + ';' + line[col_to_i['pos']]
         if position in freq_subs:
-            if freq_sub_consensus_aa[position] != line[col_to_i['Consensus_AA']]:
+            if freq_sub_consensus_aa[position] != line[col_to_i['consensus_aa']]:
                 print('Warning: Consensus AA values do not match for position ' + position + '\n', file=sys.stderr)
             max_freq = max(freq_sub_maf[position])
             max_AC = max(freq_subs_AC[position])
