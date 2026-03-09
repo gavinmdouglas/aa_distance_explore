@@ -131,7 +131,7 @@ for dms_id in dms_ids:
             
             if pos not in site_to_effect.keys():
                 site_to_effect[pos] = dict()
-            
+
             if mut_aa not in site_to_effect[pos].keys():
                 site_to_effect[pos][mut_aa] = dms_score
             else:
@@ -168,7 +168,7 @@ for dms_id in dms_ids:
 
     else:
         buried_skip = True
-
+        print("Warning: Not enough buried sites for DMS file: " + dms_file + ". Will skip this gene.", file=sys.stderr)
     if len(exposed_vals) >= 10:
         exposed_mean_score = np.mean(exposed_vals)
         exposed_sd_score = np.std(exposed_vals)
@@ -180,6 +180,7 @@ for dms_id in dms_ids:
             exposed_skip = True
     else:
         exposed_skip = True
+        print("Warning: Not enough exposed sites for DMS file: " + dms_file + ". Will skip this gene.", file=sys.stderr)
 
     exposed_gene_standard_score = defaultdict(list)
     exposed_gene_robust_score = defaultdict(list)

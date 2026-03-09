@@ -27,6 +27,8 @@ sub_tab_filt <- sub_tab_filt[which(sub_tab_filt$AC > 1), ]
 
 all_output <- fisher_tests_by_maf_and_metric_quantile(sub_tab_filt)
 
+all_output$pref <- metrics_map[all_output$pref, 'Clean']
+
 write.table(all_output,
             file =  gzfile('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/ecoli_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz'),
             sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)

@@ -26,6 +26,11 @@ rm(list = ls(all.names = TRUE))
 
 # Also decided to try combinations with EX and others, excluding custom median, just for comparison.
 
+# And decided to include DeMaSk too for an additional subset:
+# EX + DeMaSk
+# Custom median + DeMaSk
+# Custom median + EX+ DeMaSk
+
 library('DistatisR')
 
 check_symmetrical <- function(mat) {
@@ -46,7 +51,8 @@ focal_sim_files <- c("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo
                      "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/ex.tsv.gz",
                      "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/VHSE.tsv.gz",
                      "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/miyata_orig.tsv.gz",
-                     "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/AAOntology-PCs_Others.tsv.gz")
+                     "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/AAOntology-PCs_Others.tsv.gz",
+                     "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/demask.tsv.gz")
 
 aas <- sort(rownames(aa_map))
 
@@ -76,7 +82,8 @@ for (simfile in focal_sim_files) {
   
   # Check if symmetrical.
   if (!check_symmetrical(dist_tabs[[metric_name]])) {
-    stop(paste0("Metric ", metric_name, " is not symmetrical. Please check the input data."))
+    message(paste0("Metric ", metric_name, " is not symmetrical. Will make symmetrical now."))
+    dist_tabs[[metric_name]] <- (dist_tabs[[metric_name]] + t(dist_tabs[[metric_name]])) / 2
   }
 }
 
@@ -101,7 +108,10 @@ focal_combinations <- list(
   c("Custom", "VHSE", "Miyata", "OtherAAOnt"),
   c('EX', 'VHSE'),
   c('EX', 'VHSE', 'Miyata'),
-  c('EX', 'VHSE', 'Miyata', "OtherAAOnt")
+  c('EX', 'VHSE', 'Miyata', "OtherAAOnt"),
+  c('Custom', 'DeMaSk'),
+  c('EX', 'DeMaSk'),
+  c('Custom', 'EX', 'DeMaSk')
 )
 
 transform_to_range <- function(numbers, min_val = 0.01, max_val = 0.99) {
@@ -145,10 +155,16 @@ for (focal_combo_i in seq_along(focal_combinations)) {
   pos_eigenval_i <- which(eigenvalues > 0)
   eigenvalues <- eigenvalues[pos_eigenval_i]
   
-  percent_explained <- (eigenvalues / sum(eigenvalues)) * 100
   factors <- distasis_output$res4Splus$F[, pos_eigenval_i]
-  weighted_factors <- sweep(factors, 2, sqrt(percent_explained / 100), "*")
-  pairwise_dist <- data.frame(as.matrix(dist(weighted_factors)))
+  
+  # Initially thought I should normalized for eigenvalues, but then realized
+  # DISTATIS already did this implicitly, so the below commands commented
+  # out were *not* used.
+  #percent_explained <- (eigenvalues / sum(eigenvalues)) * 100
+  #weighted_factors <- sweep(factors, 2, sqrt(percent_explained / 100), "*")
+  #pairwise_dist <- data.frame(as.matrix(dist(weighted_factors)))
+  
+  pairwise_dist <- data.frame(as.matrix(dist(factors)))
   colnames(pairwise_dist) <- aas
   pairwise_dist$aa1 <- aas
   

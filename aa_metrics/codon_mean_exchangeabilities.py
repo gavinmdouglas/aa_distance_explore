@@ -10,8 +10,8 @@ from functions import (read_sim_matrix,
                        continuous_prefs_dict_sanity,
                        code11_codon_to_aa)
 
-# Compute mean exchangeabilities based on average of amino acid similarities possible for all possible single (nn-synonymous) nucleotide changes.
-sim_folder = '/home6/gmdougla/projects/aa_distance/aa_metrics/prepped_similarity_consistent'
+# Compute mean exchangeabilities based on average of amino acid similarities possible for all possible single (non-synonymous) nucleotide changes.
+sim_folder = '/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent'
 
 sim_files = [f for f in os.listdir(sim_folder) if f.endswith('.tsv.gz')]
 if len(sim_files) == 0:
@@ -31,7 +31,7 @@ for sim_file in sorted(sim_files):
     tab_ids.append(sim_file.split('.')[0])
 
 # Read Grantham distances into sub_map as well (to compute Graur stability index, for comparison).
-grantham = pd.read_csv('/home6/gmdougla/projects/aa_distance/aa_metrics/distances/grantham_orig.tsv.gz',
+grantham = pd.read_csv('/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/distances/grantham_orig.tsv.gz',
                        sep='\t', header=0, index_col=0)
 
 # Get dictionary of tuple of (row_val, col_val) as key and value as cell.
