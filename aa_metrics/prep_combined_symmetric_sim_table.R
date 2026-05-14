@@ -60,8 +60,66 @@ for (i in 1:length(sim_files)) {
   aa_sim_metrics[, metric_name] <- sim_mat[rownames(aa_sim_metrics), 3]
 }
 
+# Remove mean-based DMS-EX mesaure to avoid confusion.
+aa_sim_metrics <- aa_sim_metrics[, -which(colnames(aa_sim_metrics) == "proteinGym_rsa_mean_custom")]
+
 write.table(x = aa_sim_metrics,
             file = gzfile("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/combined_symmetric_prepped_similarity_metrics.tsv.gz"),
+            sep = "\t",
+            col.names = NA,
+            row.names = TRUE,
+            quote=FALSE)
+
+
+# Also create a table with re-ordered columns and with clean names.
+# Output as DISTANCE, as this is how the measures are generally discussed.
+metrics_map <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/metrics_raw_to_clean.tsv.gz',
+                          sep = '\t', header = TRUE, stringsAsFactors = FALSE, row.names = 1)
+
+colnames(aa_sim_metrics) <- sub('\\.prob$', '', colnames(aa_sim_metrics))
+colnames(aa_sim_metrics) <- sub('AAOntology-', 'AAOntology.', colnames(aa_sim_metrics))
+
+colnames(aa_sim_metrics) <- metrics_map[colnames(aa_sim_metrics), 'Clean']
+
+all_nonfocal_DISTATIS <- grep("\\+", colnames(aa_sim_metrics), value = TRUE)
+AA_ontology <- grep("AA-Ont.", colnames(aa_sim_metrics), value = TRUE)
+AA_ontology <- setdiff(AA_ontology, all_nonfocal_DISTATIS)
+
+experimental_measure <- c("DEX", "EX", "DMS-EX", "DeMaSk")
+sub_measure <- c("BLOSUM62", "VTML200", "Xia")
+RvC_measure <- grep("RvC", colnames(aa_sim_metrics), value=TRUE)
+
+grantham_other_measures <- grep("Grantham", colnames(aa_sim_metrics), value=TRUE)
+grantham_other_measures <- grantham_other_measures[-which(grantham_other_measures == "Grantham (orig.)")]
+grantham_other_measures <- setdiff(grantham_other_measures, all_nonfocal_DISTATIS)
+
+miyata_other_measures <- grep("Miyata", colnames(aa_sim_metrics), value=TRUE)
+miyata_other_measures <- miyata_other_measures[-which(miyata_other_measures == "Miyata (orig.)")]
+miyata_other_measures <- setdiff(miyata_other_measures, all_nonfocal_DISTATIS)
+
+physiochemical_measures <- c("Grantham (orig.)", "Miyata (orig.)", "Epstein", "Sneath", "EMPAR", "CSW", "Atchley",
+                             "Cruciani", "FASAGI", "Kidera", "Venkatarajan", "VHSE", "zScales")
+
+measure_order <- c(experimental_measure,
+                   sub_measure,
+                   RvC_measure,
+                   physiochemical_measures,
+                   AA_ontology,
+                   grantham_other_measures,
+                   miyata_other_measures,
+                   all_nonfocal_DISTATIS)
+
+measure_order[which(duplicated(measure_order))]
+
+setdiff(measure_order, colnames(aa_sim_metrics))
+setdiff(colnames(aa_sim_metrics), measure_order)
+
+aa_sim_metrics <- aa_sim_metrics[, measure_order]
+
+aa_dist_metrics <- 1 - aa_sim_metrics
+
+write.table(x = aa_dist_metrics,
+            file = gzfile("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/all_distance_measures_symmetric.tsv.gz"),
             sep = "\t",
             col.names = NA,
             row.names = TRUE,
