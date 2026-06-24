@@ -57,6 +57,11 @@ def main():
             sys.exit("Error: Fourth line of input file does not start with 'grantham.dat, geometric'.")
         elif not first6[4].startswith("ns ="):
             sys.exit("Error: Fifth line of input file does not start with 'ns ='.")
+        
+        ns_ls_linesplit = first6[4].split()
+        if ns_ls_linesplit[0] == "ns" and ns_ls_linesplit[1] == "=" and ns_ls_linesplit[3] == "ls" and ns_ls_linesplit[4] == "=":
+            ns_val = ns_ls_linesplit[2]
+            ls_val = ns_ls_linesplit[5]
 
         tree_length_hits = []
         kappa_hits = []
@@ -69,27 +74,32 @@ def main():
         np_hits = []
 
         for line in input_fh:
+            linesplit = line.split()
+            if len(linesplit) == 0:
+                continue
+
             if line.startswith("tree length ="):
-                tree_length_hits.append(line.split()[-1])
+                tree_length_hits.append(linesplit[-1])
             elif line.startswith("kappa (ts/tv) ="):
-                kappa_hits.append(line.split()[-1])
+                kappa_hits.append(linesplit[-1])
             elif line.startswith("omega (dN/dS) ="):
-                omega_hits.append(line.split()[-1])
+                omega_hits.append(linesplit[-1])
             elif line.startswith("b ="):
-                b_hits.append(line.split()[-1])
+                b_hits.append(linesplit[-1])
             elif line.startswith("a ="):
-                a_hits.append(line.split()[-1])
+                a_hits.append(linesplit[-1])
             elif line.startswith("tree length for dN:"):
-                tree_length_dN.append(line.split()[-1])
+                tree_length_dN.append(linesplit[-1])
             elif line.startswith("tree length for dS:"):
-                tree_length_dS.append(line.split()[-1])
+                tree_length_dS.append(linesplit[-1])
             elif line.startswith("lnL("):
                 line = line.replace("ntime:", "ntime: ")
                 line = line.replace("np:", "np: ")
                 line = line.replace("):", "): ")
-                lnL_hits.append(line.split()[4])
-                if line.split()[2] == "np:":
-                    np_hits.append(line.split()[3].replace('):', ''))
+                linesplit=line.split()
+                lnL_hits.append(linesplit[4])
+                if linesplit[2] == "np:":
+                    np_hits.append(linesplit[3].replace('):', ''))
 
         # Check that all hits are just one value.
         if len(tree_length_hits) != 1:
@@ -113,9 +123,9 @@ def main():
             sys.exit("Error: Zero or more than one np hit found.")
 
         if args.header:
-            print("subsample_num\tdistance_type\tlnL\tnum_param\ttree_length\tkappa\tomega\tb\ta\ttree_length_dN\ttree_length_dS")
+            print("subsample_num\tdistance_type\tlnL\tnum_param\ttree_length\tkappa\tomega\tb\ta\ttree_length_dN\ttree_length_dS\tns\tls")
 
-        print(f"{subsample_num}\t{distance_type}\t{lnL_hits[0]}\t{np_hits[0]}\t{tree_length_hits[0]}\t{kappa_hits[0]}\t{omega_hits[0]}\t{b_hits[0]}\t{a_hits[0]}\t{tree_length_dN[0]}\t{tree_length_dS[0]}")
+        print(f"{subsample_num}\t{distance_type}\t{lnL_hits[0]}\t{np_hits[0]}\t{tree_length_hits[0]}\t{kappa_hits[0]}\t{omega_hits[0]}\t{b_hits[0]}\t{a_hits[0]}\t{tree_length_dN[0]}\t{tree_length_dS[0]}\t{ns_val}\t{ls_val}")
 
 
 if __name__ == '__main__':
