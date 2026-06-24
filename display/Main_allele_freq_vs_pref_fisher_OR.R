@@ -3,72 +3,83 @@ rm(list = ls(all.names = TRUE))
 library(grid)
 library(ggplot2)
 library(cowplot)
+library(ggbeeswarm)
 
-# Figure summarizing how well observed non-syn allele frequencies across E. coli and human
-# agree with site AA preferences from a variety of approaches.
+ecoli_ML_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/ecoli_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
+                                 sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+ecoli_ML_fisher_OR <- ecoli_ML_fisher_OR[grep("standard", ecoli_ML_fisher_OR$pref, invert = TRUE), ]
+ecoli_ML_fisher_OR <- ecoli_ML_fisher_OR[ecoli_ML_fisher_OR$pref_cutoff == 0.01, ]
 
-aa_map <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/aa_map.tsv.gz',
-                     sep = '\t', header = TRUE, stringsAsFactors = FALSE, row.names = 3)
+human_ML_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/human_variants/human_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
+                                 sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+human_ML_fisher_OR <- human_ML_fisher_OR[grep("standard", human_ML_fisher_OR$pref, invert = TRUE), ]
+human_ML_fisher_OR <- human_ML_fisher_OR[human_ML_fisher_OR$pref_cutoff == 0.01, ]
 
-metrics_map <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/metrics_raw_to_clean.tsv.gz',
-                          sep = '\t', header = TRUE, stringsAsFactors = FALSE, row.names = 1)
-
-
-ecoli_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/ecoli_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
+ecoli_aa_pairs_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/ecoli_seg_subs_aa_pairs_by_freq_fisher_OR.tsv.gz',
                                        sep = '\t', stringsAsFactors = FALSE, header = TRUE)
-ecoli_fisher_OR$Species <- 'E. coli'
 
+human_aa_pairs_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/human_variants/human_seg_subs_aa_pairs_by_freq_fisher_OR.tsv.gz',
+                                       sep = '\t', stringsAsFactors = FALSE, header = TRUE)
 
-human_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/human_variants/human_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
-                              sep = '\t', stringsAsFactors = FALSE, header = TRUE)
-human_fisher_OR$Species <- 'Human'
+ecoli_aa_pairs_fisher_OR$is_ML <- FALSE
+ecoli_aa_pairs_fisher_OR$species <- "Escherichia coli"
 
-fisher_OR <- rbind(ecoli_fisher_OR, human_fisher_OR)
+ecoli_ML_points <- data.frame(maf_cutoff = ecoli_ML_fisher_OR$maf_cutoff,
+                              aa_combo = ecoli_ML_fisher_OR$pref,
+                              fisher_OR = ecoli_ML_fisher_OR$fisher_OR,
+                              fisher_p = ecoli_ML_fisher_OR$fisher_p,
+                              is_ML = TRUE,
+                              species = "Escherichia coli",
+                              pref = ecoli_ML_fisher_OR$pref)
 
-fisher_OR <- fisher_OR[which(fisher_OR$maf_cutoff == 0.01 & fisher_OR$pref_cutoff == 0.01), ]
+ecoli_combined <- rbind(cbind(ecoli_aa_pairs_fisher_OR[, c("maf_cutoff", "aa_combo", "fisher_OR", "fisher_p", "is_ML", "species")], pref = NA),
+                        ecoli_ML_points[, c("maf_cutoff", "aa_combo", "fisher_OR", "fisher_p", "is_ML", "species", "pref")])
 
-fisher_OR$pref <- metrics_map[fisher_OR$pref, 'Clean']
+human_aa_pairs_fisher_OR$is_ML <- FALSE
+human_aa_pairs_fisher_OR$species <- "Human"
 
-# Only keep the original Grantham and Miyata as it is information overflow otherwise.
-prefs_to_rm <- c("Grantham (update, recalc.)", "Grantham (update, min-max)", "Grantham (recalc.)", "Grantham (min-max)",
-                 "Miyata (recalc.)", "Miyata (min-max)", "Miyata (update, min-max)", "Miyata (update)")
-fisher_OR <- fisher_OR[which(! fisher_OR$pref %in% prefs_to_rm), ]
-fisher_OR$pref[which(fisher_OR$pref == "Grantham (orig.)")] <- 'Grantham'
-fisher_OR$pref[which(fisher_OR$pref == "Miyata (orig.)")] <- 'Miyata'
+human_ML_points <- data.frame(maf_cutoff = human_ML_fisher_OR$maf_cutoff,
+                              aa_combo = human_ML_fisher_OR$pref,
+                              fisher_OR = human_ML_fisher_OR$fisher_OR,
+                              fisher_p = human_ML_fisher_OR$fisher_p,
+                              is_ML = TRUE,
+                              species = "Human",
+                              pref = human_ML_fisher_OR$pref)
 
-fisher_OR$Significance <- ifelse(fisher_OR$fisher_p < 0.05, 'P < 0.05', 'Non-sig.')
-fisher_OR$Significance <- factor(fisher_OR$Significance, levels = c('Non-sig.', 'P < 0.05'))
+human_combined <- rbind(cbind(human_aa_pairs_fisher_OR[, c("maf_cutoff", "aa_combo", "fisher_OR", "fisher_p", "is_ML", "species")], pref = NA),
+                        human_ML_points[, c("maf_cutoff", "aa_combo", "fisher_OR", "fisher_p", "is_ML", "species", "pref")])
 
-fisher_OR$Species[which(fisher_OR$Species == 'E. coli')] <- "italic('Escherichia coli')"
-fisher_OR$Species <- factor(fisher_OR$Species, levels = c("italic('Escherichia coli')", "Human"))
+combined_data <- rbind(ecoli_combined, human_combined)
 
-pref_means <- aggregate(data = fisher_OR, fisher_OR ~ pref, FUN = mean)
-pref_means <- pref_means[order(pref_means$fisher_OR, decreasing = FALSE), ]
+combined_data$is_significant <- p.adjust(combined_data$fisher_p, method = "BH") < 0.05
 
-pref_means_ML <- pref_means[which(pref_means$pref %in% c('RaSP', 'VespaG')), ]
-pref_means_metrics <- pref_means[which(! pref_means$pref %in% c('RaSP', 'VespaG')), ]
-pref_means <- rbind(pref_means_metrics, pref_means_ML)
+combined_data$colour_cat <- ifelse(combined_data$is_ML, combined_data$pref, "aa_pair")
 
-fisher_OR$pref <- factor(fisher_OR$pref, levels = pref_means$pref)
+combined_data$maf_cutoff_str <- factor(combined_data$maf_cutoff, 
+                                       levels = sort(unique(combined_data$maf_cutoff)),
+                                       labels = c("0.0001", "0.001", "0.01"))
 
-OR_summary_plot <- ggplot(data = fisher_OR,
-                          aes(x = log2(fisher_OR),
-                              y = pref,
-                              colour = Significance)) +
-  geom_errorbarh(aes(xmin = log2(fisher_lower_95_OR), xmax = log2(fisher_upper_95_OR)), height = 0.2, colour='black') +
-  geom_point(size = 3, alpha=0.8) +
-  theme_bw() +
-  xlab(expression(log[2]~"Odds ratio (enrichment of predicted divergent substitutions among rare mutations)")) +
-  ylab("Preference type") +
-  geom_vline(xintercept = 0.0, lty = 2) +
-  facet_wrap(Species ~ ., labeller = label_parsed, scales = 'free_x') +
-  scale_colour_manual(values=c('grey80', 'cornflowerblue')) +
-  theme(axis.text.y = element_text(color = ifelse(levels(factor(fisher_OR$pref)) %in% c('RaSP', 'VespaG'), "#4CAF50", "black")))
+combined_or_plot <- ggplot(combined_data, aes(x = maf_cutoff_str, y = log2(fisher_OR))) +
+                      geom_quasirandom(aes(colour = colour_cat, alpha = is_significant, size = is_ML)) +
+                      scale_colour_manual(values = c("aa_pair" = "black", "vespag" = "red", "rasp" = "blue"),
+                                          labels = c("aa_pair" = "Amino acid pairs", "vespag" = "VespaG", "rasp" = "RaSP"),
+                                          guide = guide_legend(override.aes = list(
+                                            size = c(1, 2, 2),
+                                            alpha = c(1, 1, 1)
+                                          ))) +
+                      scale_alpha_manual(values = c("FALSE" = 0.3, "TRUE" = 1)) +
+                      scale_size_manual(values = c("FALSE" = 1, "TRUE" = 2)) +
+                    
+                      facet_wrap(~ species, labeller = labeller(species = c("Escherichia coli" = expression(italic("Escherichia coli")), "Human" = "Human"))) +
+                      labs(x = "Minor allele frequency cut-off", y = expression(log[2]("Odds ratio"))) +
+                      theme_bw() +
+                      theme(legend.position = "right", 
+                            strip.text = element_text(face = "italic"),
+                            strip.background = element_blank(),
+                            axis.line = element_line())
 
-ggsave(plot = OR_summary_plot,
-       filename = '~/Drive/research/aa_distance/aa_distance_ms/display/Main_allele_freq_by_extreme_prefs_Fisher.pdf',
-       dpi = 600,
-       width = 7,
-       height = 5,
-       units = 'in',
-       device = 'pdf')
+ggsave("~/Drive/research/aa_distance/aa_distance_ms/display/RAW_Main_allele_freq_fisher_OR_comparison.pdf", 
+       width = 8, height = 4, units = "in", dpi = 300)
+
+# Note that this plot needs to be cleaned up manually (in Affinity Designer) to format legend properly
+# and un-italicize "Human".

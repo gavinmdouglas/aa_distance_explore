@@ -33,7 +33,13 @@ for sim_file in sim_files:
                 dist[(aa1, aa2)] = dist_val
 
     # Now write out the distance matrix
-    with open(os.path.join(outdir, sim_file.replace('.tsv.gz', '.txt')), 'w') as out_fh:
+    outfile = sim_file.replace('.tsv.gz', '.txt')
+    sim_name = sim_file.split('.')[0]
+
+    # if not sim_name.startswith('DISTATIS_'):
+    #     continue
+
+    with open(os.path.join(outdir, outfile), 'w') as out_fh:
         for aa1 in aa_order:
             outline = []
             for aa2 in aa_order:

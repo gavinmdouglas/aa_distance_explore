@@ -9,19 +9,14 @@ library(circlize)
 all_output <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/human_variants/human_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
                          header=TRUE, sep = '\t', stringsAsFactors = FALSE)
 
-metrics_map <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/metrics_raw_to_clean.tsv.gz',
-                          sep = '\t', header = TRUE, stringsAsFactors = FALSE, row.names = 1)
-
-all_output$pref_clean <- metrics_map[all_output$pref, 'Clean']
-
 prefs_to_rm <- c("Grantham (update, recalc.)", "Grantham (update, min-max)", "Grantham (recalc.)", "Grantham (min-max)",
                  "Miyata (recalc.)", "Miyata (min-max)", "Miyata (update, min-max)", "Miyata (update)", "Graur index (inverted)")
-all_output <- all_output[which(! all_output$pref_clean %in% prefs_to_rm), ]
+all_output <- all_output[which(! all_output$pref %in% prefs_to_rm), ]
 
-all_output$pref_clean[which(all_output$pref_clean == "Grantham (orig.)")] <- 'Grantham'
-all_output$pref_clean[which(all_output$pref_clean == "Miyata (orig.)")] <- 'Miyata'
+all_output$pref[which(all_output$pref == "Grantham (orig.)")] <- 'Grantham'
+all_output$pref[which(all_output$pref == "Miyata (orig.)")] <- 'Miyata'
 
-unique_prefs <- unique(all_output$pref_clean)
+unique_prefs <- unique(all_output$pref)
 OR_tab <- data.frame(matrix(NA, nrow = length(unique_prefs), ncol = 12))
 rownames(OR_tab) <- unique_prefs
 
@@ -37,8 +32,8 @@ for (maf_cutoff in maf_cutoffs) {
     maf_grouping_name <- c(maf_grouping_name, paste('MAF <', format(maf_cutoff, scientific = FALSE)))
     quantile_grouping_name <- c(quantile_grouping_name, paste('Pref. quantile <', format(cutoff, scientific = FALSE)))
     for (pref in unique_prefs) {
-      OR_tab[pref, col_num] <- all_output$fisher_OR[which(all_output$pref_clean == pref & all_output$maf_cutoff == maf_cutoff & all_output$pref_cutoff == cutoff)]
-      P_tab[pref, col_num] <- all_output$fisher_p[which(all_output$pref_clean == pref & all_output$maf_cutoff == maf_cutoff & all_output$pref_cutoff == cutoff)]
+      OR_tab[pref, col_num] <- all_output$fisher_OR[which(all_output$pref == pref & all_output$maf_cutoff == maf_cutoff & all_output$pref_cutoff == cutoff)]
+      P_tab[pref, col_num] <- all_output$fisher_p[which(all_output$pref == pref & all_output$maf_cutoff == maf_cutoff & all_output$pref_cutoff == cutoff)]
     }
     col_num <- col_num + 1
   }
@@ -76,4 +71,3 @@ pdf("~/Drive/research/aa_distance/aa_distance_ms/display/Supp_human_extreme_pref
 draw(OR_heatmap)
 
 dev.off()
-

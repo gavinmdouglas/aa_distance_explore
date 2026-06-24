@@ -1,7 +1,6 @@
 import os
 import sys
 from collections import defaultdict
-import pandas as pd
 import numpy as np
 import csv
 from scipy import stats
@@ -55,6 +54,7 @@ for dms_id in dms_ids:
 
     rsa_id = dms_id.split("_")[0] + '_' + dms_id.split("_")[1]
     rsa_file = os.path.join("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/proteinGym/stuctures/ProteinGym_AF2_structures_dssp_rsa", rsa_id + '.csv')
+    rsa_aa = dict()
     with open(rsa_file, 'r') as rsa_fh:
         header = rsa_fh.readline().strip().split(",")
         if header != ['pdb_position', 'chain', 'structure', 'pdb_aa', 'rsa']:
@@ -75,6 +75,8 @@ for dms_id in dms_ids:
                 buried_sites.add(pos)
             else:
                 exposed_sites.add(pos)
+            
+            rsa_aa[pos] = line[3]
 
     # Make sure that all sites (except position 1) were tested for all possible derived amino acids.
     dms_file = os.path.join(dms_folder, dms_id + '.csv')
@@ -94,7 +96,7 @@ for dms_id in dms_ids:
             if dms_to_transform[dms_id] == "ln":
                 dms_score = dms_score
             elif dms_to_transform[dms_id] == "log2":
-                dms_score = np.log(2 ** dms_score)
+                dms_score = np.log(2) * dms_score # (For log(2^score))
             elif dms_to_transform[dms_id] == "raw ratio":
                 if dms_score < 0.01:
                     dms_score = 0.01
@@ -116,6 +118,9 @@ for dms_id in dms_ids:
             pos = int(mutant[1:-1])
             mut_aa = mutant[-1]
 
+            if wt_aa != rsa_aa[pos]:
+                sys.exit("Error: Reference amino acid in DMS file does not match RSA file: " + dms_file + " for line " + mutant + " " + wt_aa + " != " + rsa_aa[pos])
+
             if wt_aa not in possible_aa or mut_aa not in possible_aa:
                 sys.exit("Error: Unexpected amino acid in DMS file: " + dms_file + " for line " + mutant)
 
@@ -131,7 +136,7 @@ for dms_id in dms_ids:
             
             if pos not in site_to_effect.keys():
                 site_to_effect[pos] = dict()
-            
+
             if mut_aa not in site_to_effect[pos].keys():
                 site_to_effect[pos][mut_aa] = dms_score
             else:
@@ -156,30 +161,24 @@ for dms_id in dms_ids:
         else:
             sys.exit("Error: Site " + str(site) + " not found in either buried or exposed sites for DMS file: " + dms_file)
 
-    if len(buried_vals) >= 10:
-        buried_mean_score = np.mean(buried_vals)
-        buried_sd_score = np.std(buried_vals)
-        buried_median_score = np.median(buried_vals)
-        buried_mad_score = stats.median_abs_deviation(buried_vals)
-        buried_skip = False
-        if buried_mad_score == 0:
-            print("Warning: Buried median absolute deviation is zero for DMS file: " + dms_file + ". Will skip this gene.", file=sys.stderr)
-            buried_skip = True
-
+    # Originally was standardizing buried and exposed score separately, but realized it makes more sense to do them together,
+    # so that the difference across buried and exposed sites is preserved. 
+    all_gene_vals = buried_vals + exposed_vals
+    gene_skip = False
+    if len(all_gene_vals) >= 10:
+        gene_mean_score = np.mean(all_gene_vals)
+        gene_sd_score = np.std(all_gene_vals)
+        gene_median_score = np.median(all_gene_vals)
+        gene_mad_score = stats.median_abs_deviation(all_gene_vals)
+        if gene_mad_score == 0 or gene_sd_score == 0:
+            print("Warning: Gene MAD or SD is zero for DMS file: " + dms_file + ". Will skip this gene.", file=sys.stderr)
+            gene_skip = True
     else:
-        buried_skip = True
+        gene_skip = True
+        print("Warning: Not enough sites for DMS file: " + dms_file + ". Will skip this gene.", file=sys.stderr)
 
-    if len(exposed_vals) >= 10:
-        exposed_mean_score = np.mean(exposed_vals)
-        exposed_sd_score = np.std(exposed_vals)
-        exposed_median_score = np.median(exposed_vals)
-        exposed_mad_score = stats.median_abs_deviation(exposed_vals)
-        exposed_skip = False
-        if exposed_mad_score == 0:
-            print("Warning: Exposed median absolute deviation is zero for DMS file: " + dms_file + ". Will skip this gene.", file=sys.stderr)
-            exposed_skip = True
-    else:
-        exposed_skip = True
+    if gene_skip:
+        continue
 
     exposed_gene_standard_score = defaultdict(list)
     exposed_gene_robust_score = defaultdict(list)
@@ -189,36 +188,26 @@ for dms_id in dms_ids:
     for site in site_to_effect.keys():
         ref_aa = site_wt[site]
 
+        if len(site_to_effect[site]) < 15:
+            continue
+
         if site in exposed_sites:
-            if exposed_skip:
-                continue
-            site_mean_score = exposed_mean_score
-            site_sd_score = exposed_sd_score
-            site_median_score = exposed_median_score
-            site_mad_score = exposed_mad_score
             gene_standard_score = exposed_gene_standard_score
             gene_robust_score = exposed_gene_robust_score
         elif site in buried_sites:
-            if buried_skip:
-                continue
-            site_mean_score = buried_mean_score
-            site_sd_score = buried_sd_score
-            site_median_score = buried_median_score
-            site_mad_score = buried_mad_score
             gene_standard_score = buried_gene_standard_score
             gene_robust_score = buried_gene_robust_score
+        else:
+            sys.exit("Error: Site " + str(site) + " not found in either buried or exposed sites for DMS file: " + dms_file)
 
         for aa2 in site_to_effect[site].keys():
             if aa2 == ref_aa:
                 sys.exit("Error: Unexpected reference amino acid in DMS file: " + dms_file + " for line " + str(site) + " " + ref_aa)
-            else:
-                aa_combo = (ref_aa, aa2)
-                standard_score = (site_to_effect[site][aa2] - site_mean_score) / site_sd_score
-                gene_standard_score[aa_combo].append(standard_score)
-
-                if site_mad_score > 0:
-                    robust_score = (site_to_effect[site][aa2] - site_median_score) / (1.4826 * site_mad_score)
-                    gene_robust_score[aa_combo].append(robust_score)
+            aa_combo = (ref_aa, aa2)
+            standard_score = (site_to_effect[site][aa2] - gene_mean_score) / gene_sd_score
+            gene_standard_score[aa_combo].append(standard_score)
+            robust_score = (site_to_effect[site][aa2] - gene_median_score) / (1.4826 * gene_mad_score)
+            gene_robust_score[aa_combo].append(robust_score)
 
     for aa_combo in exposed_gene_standard_score.keys():
         if len(exposed_gene_standard_score[aa_combo]) > 0:
@@ -242,7 +231,6 @@ header = ['ref_aa', 'mut_aa',
            'weighted_median_standard_score']
 
 print("\t".join(header))
-
 for aa1 in sorted(list(possible_aa)):
     for aa2 in sorted(list(possible_aa)):
         if aa1 == aa2:
@@ -254,6 +242,9 @@ for aa1 in sorted(list(possible_aa)):
         if aa1 == aa2:
             sys.exit("Error: Unexpected amino acid pair in DMS file: " + str(aa_combo))
         
+        if len(exposed_gene_mean_standard_score[aa_combo]) == 0 or len(buried_gene_mean_standard_score[aa_combo]) == 0:
+            sys.exit("Error: No data for amino acid pair: " + str(aa_combo))
+
         exposed_mean_score = np.mean(exposed_gene_mean_standard_score[aa_combo])
         exposed_median_robust_score = np.median(exposed_gene_median_robust_score[aa_combo])
         
