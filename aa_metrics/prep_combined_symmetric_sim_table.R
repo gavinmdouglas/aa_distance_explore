@@ -70,7 +70,6 @@ write.table(x = aa_sim_metrics,
             row.names = TRUE,
             quote=FALSE)
 
-
 # Also create a table with re-ordered columns and with clean names.
 # Output as DISTANCE, as this is how the measures are generally discussed.
 metrics_map <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/metrics_raw_to_clean.tsv.gz',
@@ -86,7 +85,7 @@ AA_ontology <- grep("AA-Ont.", colnames(aa_sim_metrics), value = TRUE)
 AA_ontology <- setdiff(AA_ontology, all_nonfocal_DISTATIS)
 
 experimental_measure <- c("DEX", "EX", "DMS-EX", "DeMaSk")
-sub_measure <- c("BLOSUM62", "VTML200", "Xia")
+sub_measure <- c("BLOSUM62", "VTML200", "Xia", "JTT", "WAG", "LG")
 RvC_measure <- grep("RvC", colnames(aa_sim_metrics), value=TRUE)
 
 grantham_other_measures <- grep("Grantham", colnames(aa_sim_metrics), value=TRUE)

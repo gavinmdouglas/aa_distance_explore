@@ -74,7 +74,7 @@ subset_tab <- intab[, c("ref_aa", "mut_aa", "weighted_median_robust_score", "exp
 
 write.table(subset_tab,
             file = gzfile('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/proteinGym_asymmetric_scores.tsv.gz'),
-            sep = '\t', row.names = TRUE, col.names = NA, quote = FALSE)
+            sep = '\t', row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 
 subset_tab$weighted <- transform_to_range(subset_tab$weighted_median_robust_score)
@@ -85,4 +85,21 @@ subset_tab <- subset_tab[, c("ref_aa", "mut_aa", "weighted", "exposed", "buried"
 
 write.table(subset_tab,
             file = gzfile('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/proteinGym_asymmetric_similarity.tsv.gz'),
-            sep = '\t', row.names = TRUE, col.names = NA, quote = FALSE)
+            sep = '\t', row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+
+# Get combined buried and exposed asymmetric vector.
+intab <- read.table(custom_filepath, header=TRUE, sep='\t', stringsAsFactors=FALSE)
+
+subset_tab <- intab[, c("ref_aa", "mut_aa", "weighted_median_robust_score", "exposed_median_robust_score", "buried_median_robust_score")]
+
+combined_buried_exposed <- data.frame(ref_aa = c(subset_tab$ref_aa, subset_tab$ref_aa),
+                                      mut_aa = c(subset_tab$mut_aa, subset_tab$mut_aa),
+                                      rsa_group = c(rep("exposed", nrow(subset_tab)), rep("buried", nrow(subset_tab))),
+                                      combined_buried_exposed_raw = c(subset_tab$exposed_median_robust_score, subset_tab$buried_median_robust_score))
+
+combined_buried_exposed$combined_buried_exposed_similiarity <- transform_to_range(combined_buried_exposed$combined_buried_exposed_raw)
+
+write.table(combined_buried_exposed,
+            file = gzfile('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/proteinGym_asymmetric_concat_rsa_group_similarity.tsv.gz'),
+            sep = '\t', row.names = FALSE, col.names = TRUE, quote = FALSE)

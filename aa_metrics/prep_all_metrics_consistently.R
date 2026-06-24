@@ -83,6 +83,12 @@ unique(sapply(dist_files, dist_file_to_consistent_simfile))
 sim_files <- list.files('~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/similarities',
                         pattern='.tsv.gz$', full.names = TRUE)
 
+# Add JTT, WAG, and LG here, as they have similar interpretation despite being sub matrices.
+sim_files <- c(sim_files,
+               '~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/sub_matrices/jtt.tsv.gz',
+               '~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/sub_matrices/wag.tsv.gz',
+               '~/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/sub_matrices/lg.tsv.gz')
+
 sim_raw <- list()
 
 for (sim_file in sim_files) {

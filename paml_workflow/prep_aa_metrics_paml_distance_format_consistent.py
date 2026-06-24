@@ -14,9 +14,9 @@ with gzip.open('/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_me
         short_to_tri[line[2]] = line[1]
 
 # Needed to uncomment the folders to run (and ran one at a time, as needed)
-# sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent"
+sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent"
 # sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_RvC/prepped_similarity_consistent"
-sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent"
+# sim_folder = "/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent"
 
 sim_files = os.listdir(sim_folder)
 sim_files = [f for f in sim_files if f.endswith('.tsv.gz')]
@@ -33,7 +33,13 @@ for sim_file in sim_files:
                 dist[(aa1, aa2)] = dist_val
 
     # Now write out the distance matrix
-    with open(os.path.join(outdir, sim_file.replace('.tsv.gz', '.txt')), 'w') as out_fh:
+    outfile = sim_file.replace('.tsv.gz', '.txt')
+    sim_name = sim_file.split('.')[0]
+
+    # if not sim_name.startswith('DISTATIS_'):
+    #     continue
+
+    with open(os.path.join(outdir, outfile), 'w') as out_fh:
         for aa1 in aa_order:
             outline = []
             for aa2 in aa_order:

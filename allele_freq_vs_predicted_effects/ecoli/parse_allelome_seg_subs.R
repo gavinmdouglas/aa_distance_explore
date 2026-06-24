@@ -42,6 +42,19 @@ for (alleleome_file in allelome_files) {
   
   uniprot_id <- focal_id_map[Blattner_num, "uniprot_id"]
 
+  # Remove gaps:
+  intab <- intab[which(intab$consensus_AAseq != "-"), ]
+  
+  # Sometimes the X value starts at 2 weirdly. Also need to reset pos after removing gaps.
+  intab$X <- 1:nrow(intab) - 1
+  
+  # Remove last row if it's a stop codon. Sometimes weirdly there are two stop codons in the file, which looks like a bug in the dataset.
+  last_aa = intab[nrow(intab), "consensus_AAseq"]
+  while(last_aa == "*") {
+    intab <- intab[-nrow(intab), ]
+    last_aa = intab[nrow(intab), "consensus_AAseq"]
+  }
+  
   gene_pos <- c()
   gene_consensus_codon <- c()
   gene_consensus_aa <- c()
@@ -63,7 +76,7 @@ for (alleleome_file in allelome_files) {
     # Only keep valid codons.
     codon_counts <- codon_counts[names(codon_counts) %in% rownames(codon_table)]
     
-    # No variants, so just return.
+    # No variants, skip
     if (length(codon_counts) < 2) { next }
 
     non_consensus <- codon_counts[names(codon_counts) != consensus_codon]
@@ -119,11 +132,15 @@ for (alleleome_file in allelome_files) {
   
 }
 
+
 results_df <- do.call(rbind, raw)
 rownames(results_df) <- NULL
 
 # Remove first position in proteins.
 results_df <- results_df[results_df$pos > 0, ]
+
+# Remove cases where the alt amino acid is a stop codon:
+results_df <- results_df[-which(results_df$alt_aa == "*"), ]
 
 write.table(results_df,
             gzfile("~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/parsed_allelome_variants.tsv.gz"),

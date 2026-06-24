@@ -93,7 +93,7 @@ names(dist_tabs) <- sub('_prob', '', names(dist_tabs))
 names(dist_tabs) <- sub('_maxscaled', '', names(dist_tabs))
 names(dist_tabs) <- metric_id_map[names(dist_tabs), 'Clean']
 names(dist_tabs) <- gsub(' \\(orig.\\)', '', names(dist_tabs))
-names(dist_tabs)[which(names(dist_tabs) == "This study (median)")] <- "Custom"
+names(dist_tabs)[which(names(dist_tabs) == "DMS-EX")] <- "Custom"
 names(dist_tabs)[which(names(dist_tabs) == "Other (AA-Ont.)")] <- "OtherAAOnt"
 
 focal_combinations <- list(
@@ -176,7 +176,7 @@ for (focal_combo_i in seq_along(focal_combinations)) {
   out_tab$similarity <- 1 - transform_to_range(out_tab$similarity)
   
   write.table(x = out_tab,
-              file = gzfile(paste0("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/DISTATIS_working/prepped_similarity_consistent/", "DISTATIS_", focal_combo_name, ".tsv.gz")),
+              file = gzfile(paste0("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/prepped_similarity_consistent/", "DISTATIS_", focal_combo_name, ".tsv.gz")),
               quote = FALSE, col.names = TRUE, row.names = FALSE, sep = "\t")
 
 }

@@ -1,6 +1,6 @@
 rm(list = ls(all.names = TRUE))
 
-# Get rank of each distance matrix by LnL (or AIC), per lineage and subsample.
+# Get rank of each distance matrix by a measure (LnL, AIC, or BIC), per lineage and subsample.
 compute_model_ranks <- function(df, measure_col) {
   df$Model_rank <- NA
   raw <- list()
@@ -11,10 +11,10 @@ compute_model_ranks <- function(df, measure_col) {
       
       if (measure_col == 'lnL') {
         subsample_df <- subsample_df[order(subsample_df[, measure_col], decreasing = TRUE), ]
-      } else if (measure_col == 'AIC') {
+      } else if (measure_col %in% c('AIC', 'BIC')) {
         subsample_df <- subsample_df[order(subsample_df[, measure_col], decreasing = FALSE), ] 
       } else {
-        stop('measure_col must be either lnL or AIC!') 
+        stop('measure_col must be either lnL, AIC, or BIC!') 
       }
       subsample_df$Model_rank <- 1:nrow(subsample_df)
       raw[[paste(lineage, subsample)]] <- subsample_df
@@ -24,7 +24,7 @@ compute_model_ranks <- function(df, measure_col) {
   rownames(out_df) <- NULL
   return(out_df)
 }
-                    
+
 intab <- read.table(file="/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/PAML_workflow/combined_output.tsv.gz",
                     header=TRUE, sep="\t", stringsAsFactors = FALSE)
 
@@ -50,6 +50,16 @@ intab[which(intab$lineage == 'Strep'), 'lineage'] <- 'Streptococcus'
 
 # Convert subsample to integer.
 intab$subsample_num <- as.integer(gsub("subsample", "", intab$subsample))
+
+
+
+# Add in number of sequences and codons per alignment. Number of codons will be used as n for calculating BIC.
+alignment_info <- read.table(file="/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/PAML_workflow/subsampled_alignment_info.tsv.gz",
+                             header=TRUE, sep="\t", stringsAsFactors = FALSE)
+alignment_info[which(alignment_info$Group == 'Strep'), 'Group'] <- 'Streptococcus'
+
+colnames(intab)[colnames(intab) == "ls"] <- "num_codons"
+colnames(intab)[colnames(intab) == "ns"] <- "num_seqs"
 
 miyata_grantham_i <- grep('Miyata|Grantham', intab$distance_type)
 # But ignore those that contain "Combined".
@@ -89,6 +99,15 @@ M0_results$distance_type <- 'Standard M0 (no AAdist)'
 M0_results$a <- NA
 M0_results$b <- NA
 
+M0_results$num_codons <- NA
+M0_results$num_seqs <- NA
+for (i in 1:nrow(alignment_info)) {
+  lineage <- alignment_info$Group[i]
+  subsample_num <- alignment_info$Subsample[i]
+  M0_results$num_codons[M0_results$lineage == lineage & M0_results$subsample == subsample_num] <- alignment_info$NumCodons[i]
+  M0_results$num_seqs[M0_results$lineage == lineage & M0_results$subsample == subsample_num] <- alignment_info$NumSeqs[i]
+}
+
 M0_results <- M0_results[, colnames(subset_11_20)]
 
 M0_1_10 <- M0_results[M0_results$subsample_num <= 10, ]
@@ -97,16 +116,16 @@ M0_11_20 <- M0_results[M0_results$subsample_num > 10, ]
 subset_1_10 <- rbind(subset_1_10, M0_1_10)
 subset_11_20 <- rbind(subset_11_20, M0_11_20)
 
-# Compute AIC:
-subset_1_10$AIC <- 2 * subset_1_10$num_param - 2 * subset_1_10$lnL
-subset_11_20$AIC <- 2 * subset_11_20$num_param - 2 * subset_11_20$lnL
-combined_only_11_20$AIC <- 2 * combined_only_11_20$num_param - 2 * combined_only_11_20$lnL
-subset_miyata_grantham_1_10$AIC <- 2 * subset_miyata_grantham_1_10$num_param - 2 * subset_miyata_grantham_1_10$lnL
+# Compute BIC:
+subset_1_10$BIC <- log(subset_1_10$num_codons) * subset_1_10$num_param - 2 * subset_1_10$lnL
+subset_11_20$BIC <- log(subset_11_20$num_codons) * subset_11_20$num_param - 2 * subset_11_20$lnL
+combined_only_11_20$BIC <- log(combined_only_11_20$num_codons) * combined_only_11_20$num_param - 2 * combined_only_11_20$lnL
+subset_miyata_grantham_1_10$BIC <- log(subset_miyata_grantham_1_10$num_codons) * subset_miyata_grantham_1_10$num_param - 2 * subset_miyata_grantham_1_10$lnL
 
-subset_1_10 <- compute_model_ranks(df = subset_1_10, measure_col = 'AIC')
-subset_11_20 <- compute_model_ranks(df = subset_11_20, measure_col = 'AIC')
-combined_only_11_20 <- compute_model_ranks(df = combined_only_11_20, measure_col = 'AIC')
-subset_miyata_grantham_1_10 <- compute_model_ranks(df = subset_miyata_grantham_1_10, measure_col = 'AIC')
+subset_1_10 <- compute_model_ranks(df = subset_1_10, measure_col = 'BIC')
+subset_11_20 <- compute_model_ranks(df = subset_11_20, measure_col = 'BIC')
+combined_only_11_20 <- compute_model_ranks(df = combined_only_11_20, measure_col = 'BIC')
+subset_miyata_grantham_1_10 <- compute_model_ranks(df = subset_miyata_grantham_1_10, measure_col = 'BIC')
 subset_miyata_grantham_1_10$distance_type <- gsub(' \\(orig.\\)', '\\ (original\\)', subset_miyata_grantham_1_10$distance_type)
 subset_miyata_grantham_1_10$distance_type <- gsub(' \\(recalc.\\)', '\\ (recalculated\\)', subset_miyata_grantham_1_10$distance_type)
 
