@@ -95,7 +95,7 @@ with gzip.open(output_tab, 'wt') as out_fh:
         mismatch_counts = defaultdict(int)
         for pref_folder in pref_folders:
 
-            if pref_folder == "vespag":
+            if pref_folder == "vespag" or pref_folder == "vespag_sum_scaled":
                 protein_id_match = uniprot_to_blattner[protein_id] + '_' + protein_id
             else:
                 protein_id_match = protein_id

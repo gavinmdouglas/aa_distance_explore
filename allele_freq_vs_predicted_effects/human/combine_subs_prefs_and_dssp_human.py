@@ -32,9 +32,9 @@ with open(id_mapfile, 'r') as id_map_fh:
 
 subs_info = defaultdict(lambda: defaultdict(list))
 
-# protein_id      protein_pos     ref_aa  alt_aa  variant_count   sample_count    rasp    vespag
-# ENSP00000000233.5       1       G       V       2       1317898 0.0835410127827024  0.0650
-# ENSP00000000233.5       2       L       P       1       1318498 1.3608461532116036  0.0279
+# protein_id      protein_pos     ref_base        alt_base        ref_aa  alt_aa  variant_count   sample_count    Ts_or_Tv        CpG_or_not      rasp    vespag  vespag_sum_scaled
+# ENSP00000000233.5       33      A       G       I       V       136     1461854 transition      Not_CpG 0.8672465405609342      0.2100  0.2944
+# ENSP00000000233.5       150     A       G       S       G       69      1461680 transition      Not_CpG 0.4735385367838163      0.2535  0.0898
 subs_file = "/home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/human_snvs_w_prefs.tsv.gz"
 with gzip.open(subs_file, 'rt') as subs_fh:
     subs_header = subs_fh.readline().strip().split('\t')[2:]
@@ -102,15 +102,15 @@ for rsa_uniprot in protein_to_rsa_files.keys():
                 rsa_line = rsa_line.strip().split(',')
                 
                 # Note that last pos added to position as proteins split into multiple fragments always start from 1, even though they can be in middle.
-                pos = int(rsa_line[0]) - 1 + fragment_start_pos
+                pos = int(rsa_line[0]) + fragment_start_pos
                 rsa_value = float(rsa_line[4])
                 pdb_aa = rsa_line[3]
 
                 if pos not in subs_info[ensembl_protein_id]:
                     continue
 
-                if pdb_aa != subs_info[ensembl_protein_id][pos][0]:
-                    sys.exit('Mismatch of AA for ' + ensembl_protein_id + ' at position ' + str(pos) + '. Expected: ' + subs_info[ensembl_protein_id][pos][0] + ' Found: ' + pdb_aa)
+                if pdb_aa != subs_info[ensembl_protein_id][pos][2]:
+                    sys.exit('Mismatch of AA for ' + ensembl_protein_id + ' at position ' + str(pos) + '. Expected: ' + subs_info[ensembl_protein_id][pos][2] + ' Found: ' + pdb_aa)
 
                 if pos in pos_to_rsa_group[ensembl_protein_id]:
                     pos_to_rsa_group[ensembl_protein_id][pos].append(rsa_value)
@@ -152,13 +152,13 @@ for rsa_uniprot in protein_to_pref_files.keys():
             col_to_i = {pref_header[i]: i for i in range(len(pref_header))}
             for pref_line in pref_fh:
                 pref_line = pref_line.strip().split(',')
-                pos = int(pref_line[0]) - 1 + fragment_start_pos
+                pos = int(pref_line[0]) + fragment_start_pos
                 
                 if pos not in subs_info[ensembl_protein_id]:
                     continue
 
-                ref_aa = subs_info[ensembl_protein_id][pos][0]
-                derived_aa = subs_info[ensembl_protein_id][pos][1]
+                ref_aa = subs_info[ensembl_protein_id][pos][2]
+                derived_aa = subs_info[ensembl_protein_id][pos][3]
 
                 if ref_aa not in possible_aa or derived_aa not in possible_aa:
                     continue
@@ -186,8 +186,8 @@ with gzip.open(output_tab, 'wt') as out_fh:
 
         for pos in sorted(list(subs_info[ensembl_protein_id].keys())):
 
-            ref_aa = subs_info[ensembl_protein_id][pos][0]
-            derived_aa = subs_info[ensembl_protein_id][pos][1]
+            ref_aa = subs_info[ensembl_protein_id][pos][2]
+            derived_aa = subs_info[ensembl_protein_id][pos][3]
             if ref_aa not in possible_aa or derived_aa not in possible_aa:
                 continue
 
