@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import gzip
+import numbers
 import sys
 import textwrap
 import pandas as pd
@@ -47,6 +48,45 @@ ambig_aa_map = {"B": set(["D", "N"]),
                 "Z": set(["E", "Q"]),
                 "J": set(["I", "L"])}
 
+purines = {'A', 'G'}
+pyrimidines = {'C', 'T'}
+
+
+def classify_Ts_or_Tv(codon1, codon2):
+    '''
+    Classify a codon change as a transition or transversion.
+    Will also confirm there is just one nucleotide difference,
+    and that both codons are valid.
+    '''
+    if len(codon1) != 3 or len(codon2) != 3:
+        sys.exit('Error: Codons must be 3 nucleotides long.')
+
+    codon1 = codon1.upper().replace('U', 'T')
+    codon2 = codon2.upper().replace('U', 'T')
+
+    if not all(n in bases for n in codon1):
+        sys.exit('Error: Invalid nucleotide in codon1: ' + codon1)
+
+    if not all(n in bases for n in codon2):
+        sys.exit('Error: Invalid nucleotide in codon2: ' + codon2)
+
+    diff_pos = []
+    for i in range(3):
+        if codon1[i] != codon2[i]:
+            diff_pos.append(i)
+
+    if len(diff_pos) != 1:
+        sys.exit('Error: Expected 1 nucleotide difference, but found ' + str(len(diff_pos)) + '.')
+
+    base1 = codon1[diff_pos[0]]
+    base2 = codon2[diff_pos[0]]
+
+    if (base1 in purines and base2 in purines) or (base1 in pyrimidines and base2 in pyrimidines):
+        return 'Ts'
+    else:
+        return 'Tv'
+
+
 def parse_str_arg_to_floats(value):
     try:
         floats = [float(x) for x in value.split(',')]
@@ -79,7 +119,7 @@ def vespag_dir_to_prefs(in_dir, out_dir, all_sites_present=True, ref_aa_file=Non
     ref_aa_tracker = []
     parsed_genes = set()
     for filename in files:
-        if not filename.endswith('.csv.gz'):
+        if not filename.endswith('.csv.gz') or filename.startswith('.'):
             continue
         gene = filename.replace('.csv.gz', '')
 
@@ -187,6 +227,144 @@ def vespag_dir_to_prefs(in_dir, out_dir, all_sites_present=True, ref_aa_file=Non
             ref_aa_out.write("gene\tsite\tref_AA\n")
             for line in ref_aa_tracker:
                 ref_aa_out.write(line)
+
+    return None
+
+
+def thermoMPNN_dir_to_prefs(in_dir, out_dir, all_sites_present=True, ref_fill="max", sum_scale=True):
+    '''
+    Given a ThermoMPNN output directory, output all amino acid preference tables.
+    all_sites_present specifies whether all sites from min to max pos need to be present.
+    Max-min scaling from 0.01-0.99 will be applied to the raw values at each site.
+    ref_fill specifies the value to use for the reference AA. Must be one of "one", "max", "median", or "NA".
+    '''
+
+    if not os.path.exists(in_dir):
+        sys.exit('Input directory does not exist.')
+
+    # Read in all files in specified directory.
+    files = os.listdir(in_dir)
+    if len(files) == 0:
+        sys.exit('No files found in input directory.')
+
+    # Create output directory, if it does not exist.
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    # Optionally output a table of the reference AA at each site, which can be useful for sanity checks.
+    parsed_genes = set()
+    for filename in files:
+        if not filename.endswith('.csv.gz') or filename.startswith('.'):
+            continue
+        gene = filename.replace('.csv.gz', '')
+
+        gene = '-'.join(gene.split("-")[1:3])
+
+        if gene in parsed_genes:
+            sys.exit("Error: ThermoMPNN outfile for gene " + gene + " already parsed.")
+        else:
+            parsed_genes.add(gene)
+
+        filename_path = in_dir + '/' + filename
+        if not os.path.exists(filename_path):
+            sys.exit('File ' + filename_path + ' does not exist.')
+
+        print('Parsing file: ' + filename_path, file=sys.stderr)
+        # Read through file once, just to get the number of positions.
+        unique_pos = set()
+        with gzip.open(filename_path, 'rt') as thermoMPNN_in:
+            thermoMPNN_in.readline()
+            for line in thermoMPNN_in:
+                line = line.rstrip().split(',')
+                pos = int(line[4])
+                unique_pos.add(pos)
+
+        sorted_unique_pos = sorted(list(unique_pos))
+
+        if all_sites_present:
+            max_pos = max(unique_pos)
+            if len(unique_pos) != (max_pos + 1):
+                sys.exit('Max pos of ' + str(max_pos) + ' does not match number of unique positions.')
+
+        # Initialize preference table.
+        prefs = pd.DataFrame(np.nan,
+                             index=sorted_unique_pos,
+                             columns=sorted_aa)
+
+        ref_AAs = set()
+        obs_pos = set()
+        derived_AAs = []
+        inferred_val = []
+
+        with gzip.open(filename_path, 'rt') as thermoMPNN_in:
+            thermoMPNN_in.readline()
+
+            for line in thermoMPNN_in:
+                linesplit = line.rstrip().split(',')
+
+                # Skip ref AA.
+                if linesplit[5] == linesplit[6]:
+                    continue
+
+                obs_pos.add(int(linesplit[4]))
+                ref_AAs.add(linesplit[5])
+                derived_AAs += [linesplit[6]]
+
+                inferred_val.append(float(linesplit[3]))
+
+                if len(derived_AAs) == 19 and len(inferred_val) == 19:
+
+                    # Sanity check that only one ref AA and one pos parsed.
+                    if len(ref_AAs) != 1 or len(obs_pos) != 1:
+                        sys.exit('Multiple ref AAs or positions parsed in one block.')
+
+                    inverted_val = [-1 * v for v in inferred_val]
+                    obs_min = min(inverted_val)
+                    obs_max = max(inverted_val)
+                    inverted_minmax_val = []
+                    for v in inverted_val:
+                        inverted_minmax_val.append(((v - obs_min) / (obs_max - obs_min)) * (0.99 - 0.01) + 0.01)
+
+                    # Fill in preference table.
+                    pos = list(obs_pos)[0]
+                    ref_AA = list(ref_AAs)[0]
+                    for i in range(19):
+                        prefs.loc[pos, derived_AAs[i]] = inverted_minmax_val[i]
+
+                    # Set ref. AA to median or max value of all derived AAs.
+                    if ref_fill == "median":
+                        prefs.loc[pos, ref_AA] = np.median(inverted_minmax_val)
+                    elif ref_fill == "max":
+                        prefs.loc[pos, ref_AA] = np.max(inverted_minmax_val)
+                    elif ref_fill == "one":
+                        prefs.loc[pos, ref_AA] = 1.0
+                    elif ref_fill == "NA":
+                        prefs.loc[pos, ref_AA] = np.nan
+                    else:
+                        sys.exit("Error: ref_fill option must be one, NA, median, or max.")
+
+                    ref_AAs = set()
+                    obs_pos = set()
+                    derived_AAs = []
+                    inferred_val = []
+
+        if sum_scale:
+            # Total sum scale each row.
+            prefs = prefs.div(prefs.sum(axis=1), axis=0)
+
+        if ref_fill != "NA":
+            # Throw error if any NaNs present.
+            if prefs.isnull().values.any():
+                print(prefs)
+                sys.exit('NaNs present in preference table.')
+
+        # Output preference table to file.
+        prefs.index.name = 'site'
+
+        # Change to be 1-based positions, to match VespaG.
+        prefs.index = prefs.index + 1
+
+        prefs.to_csv(out_dir + '/' + gene + '.csv', sep=',', float_format='%.4f')
 
     return None
 

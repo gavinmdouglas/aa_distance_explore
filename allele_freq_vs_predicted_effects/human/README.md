@@ -157,3 +157,9 @@ python /home6/gmdougla/scripts/aa_distance_explore/allele_freq_vs_predicted_effe
 
 gzip human_per_codon_exchangeability_invariant_vs_freq.tsv
 ```
+
+Later, I also added in ThermoMPNN and the RSA-based classifications into exposed and buried sites.
+I did so by just adding to the `human_snvs_w_prefs.tsv` file created above.
+```
+
+``

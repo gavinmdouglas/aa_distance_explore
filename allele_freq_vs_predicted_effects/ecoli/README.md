@@ -1,15 +1,14 @@
 ### _E. coli_ analysis
 
-This analyis was on previously [prepped protein-coding alignments](https://zenodo.org/records/5774192) across _E. coli_ strains. The downloaded folder was renamed to `Vigue2022_dataset`.
+The original E. coli analysis was based on the Vigue 2022 dataset, but this was made up of only protein domains. It was also hard to link these to the alphafold-based structure proteins based on the E. coli K12 strain proteome. Accordingly, I re-ran the E. coli allele frequency workflow based on the "allelome" dataset from Catoiu and colleagues (2023): https://doi.org/10.1073/pnas.2218835120.
 
-Note that most of the scripts used below are general purpose and are in the `fasta_processing/` directory.
+This dataset is actually much more convenient to process as it provides the segregating codons and allele frequencies directly.
 
-`explore_maf_vs_prefs.Rmd` is a simple exploratory R notebook for some initial analyses.
+1. Parse allelome files to get single table
 
-
-1. Translate codons
-
+Did so locally with this R script:
 ```
+<<<<<<< HEAD
 mkdir -p strain_data/translated
 
 for FASTA in Vigue2022_dataset/homologous_sequences/local_strains/PF*fasta; do
@@ -168,6 +167,9 @@ python ~/scripts/aa_distance_explore/fasta_processing/segregating_subs.py \
 head -n 1 seg_subs_header.tsv > strain_data/ecoli_seg_subs.tsv
 cat seg_subs_tmp/*tsv >> strain_data/ecoli_seg_subs.tsv
 rm -r seg_subs_tmp seg_subs_header.tsv
+=======
+parse_allelome_seg_subs.R
+>>>>>>> origin/main
 ```
 
 1. Infer amino acid preferences
@@ -197,7 +199,7 @@ gzip /mfs/gdouglas/projects/aa_selection/vespag/ecoli/vespag_out/*csv
 Then (in the same folder as in earlier commands) to get the VespaG predictions in preference-format:
 ```
 python ~/scripts/aa_distance_explore/compute_prefs/vespag_to_pref.py \
-	-i vespag_out \
+	-i Ecoli_focal_seqs_vespag_output \
 	-o prefs/vespag \
 	--ref_fill NA \
 	--no_sum_scale
