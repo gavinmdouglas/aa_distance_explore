@@ -8,6 +8,8 @@ library(ggbeeswarm)
 ecoli_ML_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/ecoli_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
                                  sep = '\t', stringsAsFactors = FALSE, header = TRUE)
 ecoli_ML_fisher_OR <- ecoli_ML_fisher_OR[grep("standard", ecoli_ML_fisher_OR$pref, invert = TRUE), ]
+ecoli_ML_fisher_OR <- ecoli_ML_fisher_OR[grep("sum_scaled", ecoli_ML_fisher_OR$pref, invert = TRUE), ]
+
 ecoli_ML_fisher_OR <- ecoli_ML_fisher_OR[ecoli_ML_fisher_OR$pref_cutoff == 0.01, ]
 
 human_ML_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/human_variants/human_seg_subs_extreme_prefs_by_freq_fisher_OR.tsv.gz',
@@ -17,6 +19,9 @@ human_ML_fisher_OR <- human_ML_fisher_OR[human_ML_fisher_OR$pref_cutoff == 0.01,
 
 ecoli_aa_pairs_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/ecoli_variants/ecoli_seg_subs_aa_pairs_by_freq_fisher_OR.tsv.gz',
                                        sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+
+# Filter out AA combos with low sample size:
+ecoli_aa_pairs_fisher_OR <- ecoli_aa_pairs_fisher_OR[ecoli_aa_pairs_fisher_OR$higher_subset_count >= 10, ]
 
 human_aa_pairs_fisher_OR <- read.table('~/Drive/research/aa_distance/aa_distance_zenodo/allele_freq_vs_predicted_effects/human_variants/human_seg_subs_aa_pairs_by_freq_fisher_OR.tsv.gz',
                                        sep = '\t', stringsAsFactors = FALSE, header = TRUE)
@@ -57,11 +62,14 @@ combined_data$colour_cat <- ifelse(combined_data$is_ML, combined_data$pref, "aa_
 
 combined_data$maf_cutoff_str <- factor(combined_data$maf_cutoff, 
                                        levels = sort(unique(combined_data$maf_cutoff)),
-                                       labels = c("0.0001", "0.001", "0.01"))
+                                       labels = c("0.001", "0.01"))
 
 combined_or_plot <- ggplot(combined_data, aes(x = maf_cutoff_str, y = log2(fisher_OR))) +
                       geom_quasirandom(aes(colour = colour_cat, alpha = is_significant, size = is_ML)) +
-                      scale_colour_manual(values = c("aa_pair" = "black", "vespag" = "red", "rasp" = "blue"),
+                      scale_colour_manual(values = c("aa_pair" = "black",
+                                                     "vespag" = "red", 
+                                                     "thermoMPNN" = "purple",
+                                                     "rasp" = "blue"),
                                           labels = c("aa_pair" = "Amino acid pairs", "vespag" = "VespaG", "rasp" = "RaSP"),
                                           guide = guide_legend(override.aes = list(
                                             size = c(1, 2, 2),

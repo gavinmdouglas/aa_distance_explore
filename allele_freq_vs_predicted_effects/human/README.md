@@ -74,7 +74,8 @@ Then (in the same folder as in earlier commands) to get the VespaG predictions i
 python ~/scripts/aa_distance_explore/compute_prefs/vespag_to_pref.py \
 	-i vespag_out \
 	-o prefs/vespag \
-	--ref_fill NA
+	--ref_fill NA \
+    --no_sum_scale
 ```
 
 To get RASP scores per protein:
@@ -84,6 +85,15 @@ mkdir /home6/gmdougla/projects/aa_distance/human_variants/nonsyn_snvs/tmp
 python ~/scripts/aa_distance_explore/allele_freq_vs_predicted_effects/human/raw_rasp_scores_per_protein.py
 
 mv tmp/ prefs/rasp
+```
+
+Then to get ThermoMPNN preferences too.
+```
+python ~/scripts/aa_distance_explore/compute_prefs/thermoMPNN_to_pref.py \
+        -i /home6/gmdougla/projects/aa_distance/human_variants/UP000005640_9606_HUMAN_v4_ThermoMPNN_out/ \
+        -o prefs/thermoMPNN \
+        --ref_fill NA \
+        --no_sum_scale
 ```
 
 Mean codon exchangeabilities per site
@@ -140,7 +150,7 @@ gzip ~/projects/aa_distance/human_variants/nonsyn_snvs/human_snvs_w_prefs.tsv
 
 Also get a table of mean exchangeability per site per preference type,
 split by whether the site is always invariant or is segregating (at any frequency).
-This is a hard-coded script.  
+This is a hard-coded script.
 ```
 python /home6/gmdougla/scripts/aa_distance_explore/allele_freq_vs_predicted_effects/human/human_subset_invariant_and_freq.py \
 	> human_per_codon_exchangeability_invariant_vs_freq.tsv

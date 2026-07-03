@@ -46,9 +46,6 @@ combined_only_11_20 <- read.table("/Users/gavin/Drive/research/aa_distance/aa_di
                                   header=TRUE, sep="\t", stringsAsFactors = FALSE)
 mean(combined_only_11_20$Model_rank[combined_only_11_20$distance_type == "DEX (DMS-EX + EX)"])
 
-mean(combined_only_11_20$Model_rank[combined_only_11_20$distance_type == "EX + DeMaSk"])
-mean(combined_only_11_20$Model_rank[combined_only_11_20$lineage == "Streptococcus" & combined_only_11_20$distance_type == "EX + DeMaSk"])
-mean(combined_only_11_20$Model_rank[combined_only_11_20$lineage != "Streptococcus" & combined_only_11_20$distance_type == "EX + DeMaSk"])
 
 
 subset_11_20 <- read.table("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/PAML_workflow/focal_out_subsamples11_20.tsv.gz",

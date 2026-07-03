@@ -51,9 +51,9 @@ pca_workflow <- function(in_scaled_matrix) {
   PC1_vs_PC2 <- ggplot(pca_df, aes(x = PC1, y = PC2, label = label, colour=group)) +
     geom_point(size = 1.0) +
     geom_text_repel(box.padding = 0.5,
-                    point.padding = 0.2,
+                    point.padding = 0.3,
                     min.segment.length = 0,
-                    force = 1,
+                    force = 3,
                     force_pull = 0.1,
                     segment.color = "grey90",
                     segment.alpha = 0.8,
@@ -73,7 +73,7 @@ pca_workflow <- function(in_scaled_matrix) {
   loadings_plot <- ggplot(loadings_df, aes(x = PC1, y = PC2, label = aa)) +
                           geom_segment(aes(x = 0, y = 0, xend = PC1, yend = PC2),
                                        arrow = arrow(length = unit(0.2, "cm")), colour = "steelblue") +
-                          geom_text_repel(size = 3, box.padding = 0.4, max.overlaps = Inf, segment.color = NA) +
+                          geom_text_repel(force = 3, size = 3, box.padding = 0.4, max.overlaps = Inf, segment.color = NA) +
                         theme_bw() +
                         labs(x = paste0("PC1 loadings (", percent_explained[1], "%)"),
                              y = paste0("PC2 loadings (", percent_explained[2], "%)")) +
@@ -126,9 +126,9 @@ ggsave(plot = combined_plot,
        width = 11.5,
        height = 13)
 
-full_PCA_plot <- plot_grid(PC1_vs_PC2_full_out$PCs, PC1_vs_PC2_full_out$loadings, labels = c('a', 'b'))
+full_PCA_plot <- plot_grid(PC1_vs_PC2_full_out$PCs, PC1_vs_PC2_full_out$loadings, labels = c('a', 'b'), nrow=2)
 ggsave(plot = full_PCA_plot,
        filename = '~/Drive/research/aa_distance/aa_distance_ms/display/Supp_measure_PCA_full.pdf',
        dpi = 600,
-       width = 14,
-       height = 7)
+       width = 7,
+       height = 14)

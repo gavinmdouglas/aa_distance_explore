@@ -136,7 +136,7 @@ rm -r consensus_codon_tmp
 
 Call them relative to consensus sequence. Again, run individually to parallelize easily.
 
-Do so at codon level, and only keep most frequency segregating codon per site, restricted to those 
+Do so at codon level, and only keep most frequency segregating codon per site, restricted to those
 
 ```
 mkdir seg_subs_tmp
@@ -199,7 +199,17 @@ Then (in the same folder as in earlier commands) to get the VespaG predictions i
 python ~/scripts/aa_distance_explore/compute_prefs/vespag_to_pref.py \
 	-i vespag_out \
 	-o prefs/vespag \
-	--ref_fill NA
+	--ref_fill NA \
+	--no_sum_scale
+```
+
+And same idea to get ThermoMPNN preferences:
+```
+python ~/scripts/aa_distance_explore/compute_prefs/thermoMPNN_to_pref.py \
+        -i Ecoli_focal_seqs_ThermoMPNN_output \
+        -o prefs/thermoMPNN \
+        --ref_fill NA \
+        --no_sum_scale
 ```
 
 1. Mean codon exchangeabilities per site

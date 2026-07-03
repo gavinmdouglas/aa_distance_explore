@@ -46,8 +46,6 @@ if (length(which(is.na(intab$distance_type))) > 0) {
   stop('Some distance types not found in metric_id_map!')
 }
 
-intab[which(intab$lineage == 'Strep'), 'lineage'] <- 'Streptococcus'
-
 # Convert subsample to integer.
 intab$subsample_num <- as.integer(gsub("subsample", "", intab$subsample))
 

@@ -60,9 +60,6 @@ for (i in 1:length(sim_files)) {
   aa_sim_metrics[, metric_name] <- sim_mat[rownames(aa_sim_metrics), 3]
 }
 
-# Remove mean-based DMS-EX mesaure to avoid confusion.
-aa_sim_metrics <- aa_sim_metrics[, -which(colnames(aa_sim_metrics) == "proteinGym_rsa_mean_custom")]
-
 write.table(x = aa_sim_metrics,
             file = gzfile("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/combined_symmetric_prepped_similarity_metrics.tsv.gz"),
             sep = "\t",

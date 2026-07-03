@@ -3,7 +3,7 @@ rm(list = ls(all.names = TRUE))
 # Prepare table of all asymmetric metrics (as similarities).
 
 proteinGym_metrics <- read.table("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/proteinGym_asymmetric_similarity.tsv.gz",
-                                 header=TRUE, sep = "\t", stringsAsFactors = FALSE, row.names = 1, check.names = FALSE)
+                                 header=TRUE, sep = "\t", stringsAsFactors = FALSE, check.names = FALSE)
 
 ex <-  read.table("/Users/gavin/Drive/research/aa_distance/aa_distance_zenodo/aa_metrics/literature_data/ex_asymmetric.tsv.gz",
                   header=TRUE, sep = "\t", stringsAsFactors = FALSE, check.names = FALSE)
