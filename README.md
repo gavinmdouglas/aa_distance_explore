@@ -1,4 +1,4 @@
-Code for manuscript entitled "DEX: a new consensus-based amino acid exchangeability measure for improved codon substitution modelling" by Gavin Douglas and Louis-Marie Bobay.
+Code for manuscript entitled "DEX: an amino acid exchangeability measure for codon substitution modelling and selection inference" by Gavin Douglas and Louis-Marie Bobay.
 
 Repository structure:
 - `aa_metrics` - Code for processing various AA measures. Includes code for parsing custom measure from proteinGym database.
